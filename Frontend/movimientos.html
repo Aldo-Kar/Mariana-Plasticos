@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mariana Plásticos - Entradas y Salidas</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #334155;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background-color: #0b1f3a;
+      color: white;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .brand-logo-sm {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #2b7fff, #1b4998);
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-name {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      color: #94a3b8;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background-color: #1e293b;
+      color: #2b7fff;
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      color: #ef4444;
+    }
+
+    .logout-btn:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .header-title h2 {
+      font-size: 24px;
+      color: #0b1f3a;
+    }
+
+    .header-title p {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .btn-primary {
+      background-color: #2b7fff;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary:hover {
+      background-color: #1a66db;
+    }
+
+    /* Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .metric-card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    .metric-title {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0b1f3a;
+      margin-top: 8px;
+    }
+
+    /* Table */
+    .table-container {
+      background-color: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      padding: 20px;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .search-input {
+      padding: 8px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      width: 280px;
+    }
+
+    .search-input:focus {
+      border-color: #2b7fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      padding: 12px;
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+
+    /* Badges */
+    .badge-in {
+      background-color: #dcfce7;
+      color: #15803d;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .badge-out {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(11, 31, 58, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal-card {
+      background-color: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+      color: #0b1f3a;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #64748b;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .form-group.full {
+      grid-column: span 2;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: #2b7fff;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .btn-secondary {
+      background-color: #e2e8f0;
+      color: #475569;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background-color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo-sm">M</div>
+      <div class="brand-name">Mariana Plásticos</div>
+    </div>
+    
+    <ul class="nav-menu">
+      <li><a href="dashboard.html" class="nav-link">📦 Inventario</a></li>
+      <li><a href="movimientos.html" class="nav-link active">📥 Entradas / Salidas</a></li>
+      <li><a href="#" class="nav-link">🛍️ Pedidos y Envíos</a></li>
+      <li><a href="usuarios.html" class="nav-link">👥 Usuarios y Roles</a></li>
+      <li><a href="#" class="nav-link">📊 Reportes</a></li>
+      <li><a href="index.html" class="nav-link logout-btn">🚪 Cerrar Sesión</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="header-bar">
+      <div class="header-title">
+        <h2>Entradas y Salidas de Almacén</h2>
+        <p>Registro de flujo de resinas, insumos y productos terminados</p>
+      </div>
+      <button class="btn-primary" id="btnOpenModal">
+        🔄 Registrar Movimiento
+      </button>
+    </header>
+
+    <!-- Metrics -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">Movimientos Registrados Hoy</div>
+        <div class="metric-value">28</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Entradas (Ingresos)</div>
+        <div class="metric-value" style="color: #16a34a;">+1,850 kg</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Salidas (Despachos)</div>
+        <div class="metric-value" style="color: #dc2626;">-920 kg</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Mermas / Registro de Ajuste</div>
+        <div class="metric-value" style="color: #d97706;">15 kg</div>
+      </div>
+    </section>
+
+    <!-- Table -->
+    <section class="table-container">
+      <div class="table-header">
+        <h3>Historial Reciente de Transacciones</h3>
+        <input type="text" id="searchInput" placeholder="Buscar por producto, folio o motivo..." class="search-input">
+      </div>
+
+      <table id="movementsTable">
+        <thead>
+          <tr>
+            <th>Folio / Fecha</th>
+            <th>Tipo</th>
+            <th>Producto / Material</th>
+            <th>Cantidad</th>
+            <th>Motivo</th>
+            <th>Responsable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>#MOV-1092</strong><br>
+              <small style="color: #64748b;">Hoy, 10:15 AM</small>
+            </td>
+            <td><span class="badge-in">Entrada</span></td>
+            <td>Polietileno HDPE (POL-001)</td>
+            <td><strong>+ 1,000 kg</strong></td>
+            <td>Compra a Proveedor</td>
+            <td>Carlos Mendoza</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>#MOV-1091</strong><br>
+              <small style="color: #64748b;">Hoy, 09:30 AM</small>
+            </td>
+            <td><span class="badge-out">Salida</span></td>
+            <td>Botella 500ml Transparente (BOT-500)</td>
+            <td><strong>- 500 pzs</strong></td>
+            <td>Despacho Pedido #PED-881</td>
+            <td>Ana Lucía Torres</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>#MOV-1090</strong><br>
+              <small style="color: #64748b;">Ayer, 04:45 PM</small>
+            </td>
+            <td><span class="badge-in">Entrada</span></td>
+            <td>Tapa Rosca 28mm Azul (TAP-028)</td>
+            <td><strong>+ 5,000 pzs</strong></td>
+            <td>Ingreso de Producción</td>
+            <td>Carlos Mendoza</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>#MOV-1089</strong><br>
+              <small style="color: #64748b;">Ayer, 02:10 PM</small>
+            </td>
+            <td><span class="badge-out">Salida</span></td>
+            <td>Resina PET Reciclada (PET-102)</td>
+            <td><strong>- 15 kg</strong></td>
+            <td>Merma por purga de máquina</td>
+            <td>Roberto Gómez</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Modal Form -->
+  <div class="modal-overlay" id="movementModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Registrar Movimiento de Inventario</h3>
+        <button class="close-modal" id="btnCloseModal">&times;</button>
+      </div>
+
+      <form id="movementForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="tipo">Tipo de Movimiento</label>
+            <select id="tipo" required>
+              <option value="Entrada">📥 Entrada (Aumenta Stock)</option>
+              <option value="Salida">📤 Salida (Disminuye Stock)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="motivo">Motivo / Concepto</label>
+            <select id="motivo" required>
+              <option value="Compra">Compra a Proveedor</option>
+              <option value="Producción">Ingreso por Producción</option>
+              <option value="Venta">Venta / Despacho a Cliente</option>
+              <option value="Merma">Merma / Defecto de Fábrica</option>
+              <option value="Ajuste">Ajuste de Inventario</option>
+            </select>
+          </div>
+
+          <div class="form-group full">
+            <label for="producto">Producto / Materia Prima</label>
+            <select id="producto" required>
+              <option value="">Seleccionar artículo...</option>
+              <option value="POL-001">Polietileno HDPE (POL-001)</option>
+              <option value="BOT-500">Botella Plástica 500ml (BOT-500)</option>
+              <option value="PET-102">Resina PET Reciclada (PET-102)</option>
+              <option value="TAP-028">Tapa Rosca 28mm Azul (TAP-028)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="cantidad">Cantidad</label>
+            <input type="number" id="cantidad" placeholder="0" min="1" step="any" required>
+          </div>
+
+          <div class="form-group">
+            <label for="unidad">Unidad de Medida</label>
+            <select id="unidad" required>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="pzs">Piezas (pzs)</option>
+              <option value="lotes">Lotes</option>
+            </select>
+          </div>
+
+          <div class="form-group full">
+            <label for="observaciones">Observaciones / Folio de referencia</label>
+            <textarea id="observaciones" rows="2" placeholder="Ej. Factura F-8492 o Número de Orden"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Transacción</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('movementModal');
+    const btnOpenModal = document.getElementById('btnOpenModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancel = document.getElementById('btnCancel');
+    const movementForm = document.getElementById('movementForm');
+
+    // Manejo Modal
+    btnOpenModal.addEventListener('click', () => modal.classList.add('active'));
+    const closeModal = () => modal.classList.remove('active');
+    btnCloseModal.addEventListener('click', closeModal);
+    btnCancel.addEventListener('click', closeModal);
+
+    // Registro dinámico de movimiento (Afecta la tabla en tiempo real)
+    movementForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const tipo = document.getElementById('tipo').value;
+      const producto = document.getElementById('producto').options[document.getElementById('producto').selectedIndex].text;
+      const cantidad = document.getElementById('cantidad').value;
+      const unidad = document.getElementById('unidad').value;
+      const motivo = document.getElementById('motivo').value;
+
+      const tbody = document.querySelector('#movementsTable tbody');
+      const newRow = document.createElement('tr');
+
+      const folio = "#MOV-" + Math.floor(1000 + Math.random() * 9000);
+      const isEntrada = tipo === 'Entrada';
+      const badgeClass = isEntrada ? 'badge-in' : 'badge-out';
+      const sign = isEntrada ? '+' : '-';
+
+      newRow.innerHTML = `
+        <td>
+          <strong>${folio}</strong><br>
+          <small style="color: #64748b;">Justo ahora</small>
+        </td>
+        <td><span class="${badgeClass}">${tipo}</span></td>
+        <td>${producto}</td>
+        <td><strong>${sign} ${cantidad} ${unidad}</strong></td>
+        <td>${motivo}</td>
+        <td>Usuario Activo</td>
+      `;
+
+      tbody.insertBefore(newRow, tbody.firstChild);
+
+      alert(`Movimiento registrado exitosamente: ${tipo} de ${cantidad} ${unidad}`);
+      movementForm.reset();
+      closeModal();
+    });
+
+    // Buscador interactivo
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+      const filter = this.value.toLowerCase();
+      const rows = document.querySelectorAll('#movementsTable tbody tr');
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

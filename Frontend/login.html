@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mariana Plásticos - Sistema de Inventario</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0b1f3a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .login-container {
+      background-color: #ffffff;
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .brand-header {
+      margin-bottom: 30px;
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #2b7fff, #1b4998);
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      border-radius: 14px;
+      margin-bottom: 12px;
+    }
+
+    .brand-title {
+      font-size: 24px;
+      color: #0b1f3a;
+      font-weight: 700;
+    }
+
+    .brand-subtitle {
+      font-size: 14px;
+      color: #556b82;
+      margin-top: 4px;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-group input:focus {
+      border-color: #2b7fff;
+      box-shadow: 0 0 0 3px rgba(43, 127, 255, 0.15);
+    }
+
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .forgot-password {
+      color: #2b7fff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .forgot-password:hover {
+      text-decoration: underline;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background-color: #2b7fff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-submit:hover {
+      background-color: #1a66db;
+    }
+
+    .btn-submit:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .footer-text {
+      margin-top: 25px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="brand-header">
+      <div class="brand-logo">M</div>
+      <h1 class="brand-title">Mariana Plásticos</h1>
+      <p class="brand-subtitle">Sistema de Inventario</p>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="correo">Correo Electrónico</label>
+        <input 
+          type="email" 
+          id="correo" 
+          name="correo" 
+          placeholder="usuario@marianaplasticos.com" 
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          placeholder="••••••••" 
+          required
+        >
+      </div>
+
+      <div class="form-options">
+        <label class="remember-me">
+          <input type="checkbox" id="remember"> Recordarme
+        </label>
+        <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+      </div>
+
+      <button type="submit" id="btnSubmit" class="btn-submit">Iniciar Sesión</button>
+    </form>
+
+    <div class="footer-text">
+      &copy; 2026 Mariana Plásticos - Todos los derechos reservados
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const correo = document.getElementById('correo').value;
+      const password = document.getElementById('password').value;
+      const btnSubmit = document.getElementById('btnSubmit');
+
+      // Deshabilitar botón durante el proceso
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Iniciando sesión...';
+
+      try {
+        /* 
+        // Descomenta y ajusta este bloque para conectar tu API real:
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo, password })
+        });
+
+        if (!response.ok) throw new Error('Credenciales inválidas');
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+        */
+
+        // Simulación de respuesta asíncrona de servidor (1 segundo de espera)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Redirección tras validar exitosamente
+        window.location.href = "dashboard.html";
+
+      } catch (error) {
+        alert("Error al iniciar sesión: " + error.message);
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Iniciar Sesión';
+      }
+    });
+  </script>
+
+</body>
+</html>
