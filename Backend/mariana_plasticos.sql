@@ -6,7 +6,9 @@
 -- Crear base de datos
 CREATE DATABASE IF NOT EXISTS mariana_plasticos;
 USE mariana_plasticos;
-
+DROP DATABASE IF EXISTS mariana_plasticos;
+CREATE DATABASE mariana_plasticos;
+USE mariana_plasticos;
 -- ==================================================
 -- CREAR TABLAS
 -- ==================================================
