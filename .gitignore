@@ -1,0 +1,58 @@
+# ===== Sistema / macOS / Windows =====
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ===== Java / Maven =====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+build/
+out/
+
+# ===== Node (si se agrega) =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+.cache/
+
+# ===== Variables de entorno / credenciales =====
+.env
+.env.local
+.env.*.local
+application-local.properties
+application-secret.properties
+
+# ===== Logs y temporales =====
+logs/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ===== Base de datos (no subas dumps con datos reales) =====
+*.sql.bak
+Dump*.sql
+
+# ===== Spring Boot =====
+HELP.md
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
