@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mariana Plásticos - Sistema de Inventario</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
 
   <!-- ========== LOGIN ========== -->
@@ -166,9 +168,11 @@
           <div class="table-header">
             <div class="search-box" style="width:320px;">
               <span>🔍</span>
-              <input type="text" id="searchProductos" placeholder="Buscar por nombre o SKU..." oninput="renderProductos()">
+              <input type="text" id="searchProductos" placeholder="Buscar por nombre o SKU..."
+                oninput="renderProductos()">
             </div>
-            <select id="filtroCategoria" onchange="renderProductos()" style="padding:0.5rem 1rem;border-radius:8px;border:1.5px solid #d1d5db;">
+            <select id="filtroCategoria" onchange="renderProductos()"
+              style="padding:0.5rem 1rem;border-radius:8px;border:1.5px solid #d1d5db;">
               <option value="">Todas las categorías</option>
               <option value="1">Envases</option>
               <option value="2">Bolsas</option>
@@ -289,14 +293,19 @@
               <br>• Estado de pedidos
             </div>
             <div class="suggestions">
-              <button class="suggestion-btn" onclick="enviarSugerencia('¿Cuáles productos tienen stock bajo?')">Productos con stock bajo</button>
-              <button class="suggestion-btn" onclick="enviarSugerencia('Existencias de Botella PET 1 litro')">Existencias Botella PET</button>
-              <button class="suggestion-btn" onclick="enviarSugerencia('Recomendación de reabastecimiento')">Recomendación reabastecimiento</button>
-              <button class="suggestion-btn" onclick="enviarSugerencia('Mostrar pedidos pendientes')">Pedidos pendientes</button>
+              <button class="suggestion-btn"
+                onclick="enviarSugerencia('¿Cuáles productos tienen stock bajo?')">Productos con stock bajo</button>
+              <button class="suggestion-btn"
+                onclick="enviarSugerencia('Existencias de Botella PET 1 litro')">Existencias Botella PET</button>
+              <button class="suggestion-btn"
+                onclick="enviarSugerencia('Recomendación de reabastecimiento')">Recomendación reabastecimiento</button>
+              <button class="suggestion-btn" onclick="enviarSugerencia('Mostrar pedidos pendientes')">Pedidos
+                pendientes</button>
             </div>
           </div>
           <div class="chat-input">
-            <input type="text" id="chatInput" placeholder="Escribe tu consulta..." onkeypress="if(event.key==='Enter') enviarMensaje()">
+            <input type="text" id="chatInput" placeholder="Escribe tu consulta..."
+              onkeypress="if(event.key==='Enter') enviarMensaje()">
             <button class="btn btn-primary" onclick="enviarMensaje()">Enviar</button>
           </div>
         </div>
@@ -339,6 +348,10 @@
         <div class="form-group">
           <label>Stock mínimo</label>
           <input type="number" id="prodStockMin" min="0" value="10">
+        </div>
+        <div class="form-group">
+          <label>Stock actual</label>
+          <input type="number" id="prodStockActual" min="0" value="0">
         </div>
         <div class="form-group">
           <label>Estado</label>
@@ -460,4 +473,5 @@
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>
