@@ -3,11 +3,6 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 
-/**
- * Entidad Producto - CORREGIDA para coincidir con la tabla real de MySQL.
- * (La version anterior tenia campos que no existen en la BD: nombreProducto, precio, stock)
- * Tabla: Productos
- */
 @Entity
 @Table(name = "Productos")
 public class Producto {
@@ -35,23 +30,26 @@ public class Producto {
     @Column(name = "stock_minimo")
     private Integer stockMinimo;
 
-    @Column(name = "url_imagen", length = 500)
-    private String urlImagen;
+    // ✅ Agregado: stock real del producto
+    @Column(name = "stock_actual")
+    private Integer stockActual;
 
     @Column(name = "estado", length = 20)
     private String estado;
 
-    // Constructores
+    // Constructor vacío
     public Producto() {}
 
+    // Constructor completo
     public Producto(Integer idCategoria, String sku, String nombre, String descripcion,
-                    BigDecimal precioUnitario, Integer stockMinimo, String estado) {
+                    BigDecimal precioUnitario, Integer stockMinimo, Integer stockActual, String estado) {
         this.idCategoria = idCategoria;
         this.sku = sku;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.precioUnitario = precioUnitario;
         this.stockMinimo = stockMinimo;
+        this.stockActual = stockActual;
         this.estado = estado;
     }
 
@@ -77,8 +75,8 @@ public class Producto {
     public Integer getStockMinimo() { return stockMinimo; }
     public void setStockMinimo(Integer stockMinimo) { this.stockMinimo = stockMinimo; }
 
-    public String getUrlImagen() { return urlImagen; }
-    public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
+    public Integer getStockActual() { return stockActual; }
+    public void setStockActual(Integer stockActual) { this.stockActual = stockActual; }
 
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }

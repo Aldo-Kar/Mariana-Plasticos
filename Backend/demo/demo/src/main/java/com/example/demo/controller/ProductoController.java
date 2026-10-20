@@ -8,16 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
-/**
- * CRUD completo de Productos.
- * Reemplaza al ProductoController anterior (solo tenia GET /api/productos).
- */
 @RestController
 @RequestMapping("/api/productos")
-//@CrossOrigin(origins = "*")
 public class ProductoController {
 
     @Autowired
@@ -42,6 +36,8 @@ public class ProductoController {
     @PostMapping
     public ResponseEntity<ApiResponse<Producto>> crear(@RequestBody Producto producto) {
         if (producto.getEstado() == null) producto.setEstado("Activo");
+        if (producto.getStockActual() == null) producto.setStockActual(0); // Valor por defecto
+        if (producto.getStockMinimo() == null) producto.setStockMinimo(10); // Mínimo por defecto
         Producto guardado = productoRepository.save(producto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Producto creado", guardado));
@@ -59,7 +55,8 @@ public class ProductoController {
         existente.setDescripcion(datos.getDescripcion() != null ? datos.getDescripcion() : existente.getDescripcion());
         existente.setPrecioUnitario(datos.getPrecioUnitario() != null ? datos.getPrecioUnitario() : existente.getPrecioUnitario());
         existente.setStockMinimo(datos.getStockMinimo() != null ? datos.getStockMinimo() : existente.getStockMinimo());
-        existente.setUrlImagen(datos.getUrlImagen() != null ? datos.getUrlImagen() : existente.getUrlImagen());
+        // ✅ Agregado: actualizar stock actual
+        existente.setStockActual(datos.getStockActual() != null ? datos.getStockActual() : existente.getStockActual());
         existente.setEstado(datos.getEstado() != null ? datos.getEstado() : existente.getEstado());
 
         Producto actualizado = productoRepository.save(existente);
