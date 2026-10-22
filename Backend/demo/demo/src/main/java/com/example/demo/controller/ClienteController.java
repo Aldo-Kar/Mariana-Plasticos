@@ -39,14 +39,17 @@ public class ClienteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Cliente>> actualizar(@PathVariable Integer id, @RequestBody Cliente datos) {
-        Cliente existente = clienteRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente", "id", id));
-        existente.setNombre(datos.getNombre() != null ? datos.getNombre() : existente.getNombre());
-        existente.setCorreo(datos.getCorreo() != null ? datos.getCorreo() : existente.getCorreo());
-        existente.setTelefono(datos.getTelefono() != null ? datos.getTelefono() : existente.getTelefono());
-        existente.setDireccion(datos.getDireccion() != null ? datos.getDireccion() : existente.getDireccion());
-        return ResponseEntity.ok(ApiResponse.ok("Cliente actualizado", clienteRepository.save(existente)));
-    }
+    Cliente existente = clienteRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente", "id", id));
+
+    existente.setNombre(datos.getNombre() != null ? datos.getNombre() : existente.getNombre());
+    existente.setNegocio(datos.getNegocio() != null ? datos.getNegocio() : existente.getNegocio());
+    existente.setCorreo(datos.getCorreo() != null ? datos.getCorreo() : existente.getCorreo());
+    existente.setTelefono(datos.getTelefono() != null ? datos.getTelefono() : existente.getTelefono());
+    existente.setDireccion(datos.getDireccion() != null ? datos.getDireccion() : existente.getDireccion());
+    existente.setCategoria(datos.getCategoria() != null ? datos.getCategoria() : existente.getCategoria());
+
+    return ResponseEntity.ok(ApiResponse.ok("Cliente actualizado", clienteRepository.save(existente)));
+}
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> eliminar(@PathVariable Integer id) {

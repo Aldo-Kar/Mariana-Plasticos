@@ -279,7 +279,7 @@
       <div id="clientes" class="page">
         <div class="header">
           <h2>clientes</h2>
-          <button class="btn btn-primary" onclick="registrarCliente('clientes')">+ Registrar Cliente</button>
+          <button class="btn btn-primary" onclick="abrirModalCliente()">+ Registrar Cliente</button>
         </div>
         <div class="table-container">
           <div class="table-header">
@@ -509,6 +509,56 @@
       </div>
     </div>
   </div>
+  <!-- ========== MODAL REGISTRAR / EDITAR CLIENTE ========== -->
+<div id="modalCliente" class="modal">
+  <div class="modal-content" style="max-width: 520px;">
+    <div class="modal-header">
+      <h3 id="modalClienteTitulo">Registrar Cliente</h3>
+      <button class="modal-close" onclick="cerrarModal('modalCliente')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clienteId">
+
+      <div class="form-group">
+        <label>Nombre completo *</label>
+        <input type="text" id="clienteNombre" placeholder="Ej. Juan Pérez" required>
+      </div>
+
+      <div class="form-group">
+        <label>Negocio</label>
+        <input type="text" id="clienteNegocio" placeholder="Ej. Comercial La Central">
+      </div>
+
+      <div class="form-group">
+        <label>Correo</label>
+        <input type="email" id="clienteCorreo" placeholder="ejemplo@gmail.com">
+      </div>
+
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="text" id="clienteTelefono" placeholder="7221234567">
+      </div>
+
+      <div class="form-group">
+        <label>Dirección</label>
+        <input type="text" id="clienteDireccion" placeholder="Toluca, Estado de México">
+      </div>
+
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="clienteCategoria">
+          <option value="">Seleccionar...</option>
+          <option value="1">Mayorista</option>
+          <option value="2">Menudista</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modalCliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
 
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>

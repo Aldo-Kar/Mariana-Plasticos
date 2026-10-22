@@ -101,12 +101,13 @@ async function mostrarPagina(id) {
   try { 
     await cargarDatos(); 
     const renders = {
-      dashboard: renderDashboard,
-      productos: renderProductos,
-      inventario: renderInventario,
-      movimientos: renderMovimientos,
-      pedidos: renderPedidos
-    }; 
+   dashboard: renderDashboard,
+   productos: renderProductos,
+   inventario: renderInventario,
+   movimientos: renderMovimientos,
+   pedidos: renderPedidos,
+   clientes: renderClientes          // ← agrega esta línea
+  };
     if (renders[id]) await renders[id](); 
   } catch(e) { showError(e); }
 }
@@ -584,6 +585,122 @@ async function eliminarPedido(id) {
   }
 }
 
+// ==================== CLIENTES ====================
+async function renderClientes() {
+  try {
+    cache.clientes = await get('/clientes');
+  } catch (e) {
+    console.warn('No se pudieron cargar clientes', e);
+    cache.clientes = [];
+  }
+
+  const texto = (document.getElementById('searchCliente')?.value || '').toLowerCase().trim();
+  const filtroCat = document.getElementById('filtroCategoria')?.value || '';
+
+  const lista = cache.clientes.filter(c => {
+  const idFormateado = String(c.idCliente).padStart(4, '0');   // ← 0001, 0002...
+  
+  const coincideTexto = (
+    `${c.idCliente || ''} ${idFormateado} ${c.nombre || ''} ${c.negocio || ''} ${c.correo || ''}`
+  ).toLowerCase().includes(texto);
+
+  const coincideCat = !filtroCat || String(c.categoria) === String(filtroCat);
+  return coincideTexto && coincideCat;
+});
+
+  const tbody = document.getElementById('tablaclientes');
+  if (!tbody) return;
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center; padding:2rem; color:#6b7280;">
+          No se encontraron clientes
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(c => `
+    <tr>
+      <td>${String(c.idCliente).padStart(4, '0')}</td>
+      <td>${esc(c.nombre || '')}</td>
+      <td>${esc(c.negocio || '—')}</td>
+      <td>${esc(c.correo || '')}</td>
+      <td>${esc(c.telefono || '')}</td>
+      <td>${esc(c.direccion || '')}</td>
+      <td>
+        ${c.categoria == 1 
+          ? '<span style="color:#2563eb; font-weight:600;">Mayorista</span>' 
+          : c.categoria == 2 
+            ? '<span style="color:#059669; font-weight:600;">Menudista</span>' 
+            : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ==================== MODAL CLIENTE ====================
+function abrirModalCliente(id = null) {
+  document.getElementById('clienteId').value = id || '';
+  document.getElementById('modalClienteTitulo').textContent = id ? 'Editar Cliente' : 'Registrar Cliente';
+
+  if (id) {
+    const c = byId(cache.clientes, 'idCliente', id);
+    if (c) {
+      document.getElementById('clienteNombre').value    = c.nombre || '';
+      document.getElementById('clienteNegocio').value   = c.negocio || '';
+      document.getElementById('clienteCorreo').value    = c.correo || '';
+      document.getElementById('clienteTelefono').value  = c.telefono || '';
+      document.getElementById('clienteDireccion').value = c.direccion || '';
+      document.getElementById('clienteCategoria').value = c.categoria || '';
+    }
+  } else {
+    // Limpiar formulario
+    document.getElementById('clienteNombre').value    = '';
+    document.getElementById('clienteNegocio').value   = '';
+    document.getElementById('clienteCorreo').value    = '';
+    document.getElementById('clienteTelefono').value  = '';
+    document.getElementById('clienteDireccion').value = '';
+    document.getElementById('clienteCategoria').value = '';
+  }
+
+  document.getElementById('modalCliente').classList.add('active');
+}
+
+async function guardarCliente() {
+  const id = document.getElementById('clienteId').value;
+
+  const datos = {
+    nombre:    document.getElementById('clienteNombre').value.trim(),
+    negocio:   document.getElementById('clienteNegocio').value.trim() || null,
+    correo:    document.getElementById('clienteCorreo').value.trim() || null,
+    telefono:  document.getElementById('clienteTelefono').value.trim() || null,
+    direccion: document.getElementById('clienteDireccion').value.trim() || null,
+    categoria: document.getElementById('clienteCategoria').value 
+                 ? Number(document.getElementById('clienteCategoria').value) 
+                 : null
+  };
+
+  if (!datos.nombre) {
+    alert('El nombre es obligatorio.');
+    return;
+  }
+
+  try {
+    if (id) {
+      await put(`/clientes/${id}`, datos);
+    } else {
+      await post('/clientes', datos);
+    }
+
+    cerrarModal('modalCliente');
+    await renderClientes();
+  } catch (e) {
+    showError(e);
+  }
+}
+
 // ==================== ASISTENTE IA (simulado) ====================
 function enviarSugerencia(texto) {
   document.getElementById('chatInput').value = texto;
@@ -640,6 +757,8 @@ function cerrarModal(id) {
 // Eventos al cargar
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('searchProductos')?.addEventListener('input', () => renderProductos().catch(showError));
+  document.getElementById('searchCliente')?.addEventListener('input', () => renderClientes().catch(showError));
+  document.getElementById('filtroCategoria')?.addEventListener('change', () => renderClientes().catch(showError));
   
   // Restaurar sesión si existe
   const guardado = localStorage.getItem('usuario');
