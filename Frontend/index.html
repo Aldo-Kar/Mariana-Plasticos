@@ -54,32 +54,37 @@
       <ul class="nav-menu">
         <li class="nav-item">
           <a class="nav-link active" data-page="dashboard" onclick="mostrarPagina('dashboard')">
-            <span>📊</span> <span>Dashboard</span>
+            <span>Dashboard</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-page="productos" onclick="mostrarPagina('productos')">
-            <span>📦</span> <span>Productos</span>
+            <span>Productos</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-page="inventario" onclick="mostrarPagina('inventario')">
-            <span>📋</span> <span>Inventario</span>
+            <span>Inventario</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-page="movimientos" onclick="mostrarPagina('movimientos')">
-            <span>🔄</span> <span>Movimientos</span>
+            <span>Movimientos</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-page="pedidos" onclick="mostrarPagina('pedidos')">
-            <span>🛒</span> <span>Pedidos</span>
+            <span>Pedidos</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-page="clientes" onclick="mostrarPagina('clientes')">
+            <span>clientes</span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-page="asistente" onclick="mostrarPagina('asistente')">
-            <span>🤖</span> <span>Asistente IA</span>
+            <span>Asistente IA</span>
           </a>
         </li>
       </ul>
@@ -266,6 +271,42 @@
               </tr>
             </thead>
             <tbody id="tablaPedidos"></tbody>
+          </table>
+        </div>
+      </div>
+
+       <!-- ========== CLIENTES HACER AJUSTES ========== -->
+      <div id="clientes" class="page">
+        <div class="header">
+          <h2>clientes</h2>
+          <button class="btn btn-primary" onclick="registrarCliente('clientes')">+ Registrar Cliente</button>
+        </div>
+        <div class="table-container">
+          <div class="table-header">
+            <div class="search-box" style="width:320px;">
+              <input type="text" id="searchCliente" placeholder="Buscar por nombre o id"
+                oninput="renderCliente()">
+            </div>
+            <select id="filtroCategoria" onchange="renderCliente()"
+              style="padding:0.5rem 1rem;border-radius:8px;border:1.5px solid #d1d5db;">
+              <option value="">Todos los clientes</option>
+              <option value="1">mayoristas</option>
+              <option value="2">menudistas</option>
+            </select>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>negocio</th>
+                <th>Correo</th>
+                <th>Telefono</th>
+                <th>direccion</th>
+                <th>categoria</th>
+              </tr>
+            </thead>
+            <tbody id="tablaclientes"></tbody>
           </table>
         </div>
       </div>
