@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mariana Plásticos - Sistema de Inventario</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet"
+    href="https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css">
 </head>
 
 <body>
@@ -43,61 +45,80 @@
   <!-- ========== APP ========== -->
   <div id="app" class="app">
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="logo">
         <div class="logo-icon" style="width:42px;height:42px;font-size:22px;">M</div>
         <div class="logo-text">
           <h1>Mariana</h1>
-          <span>Inventario</span>
+          <span>Plasticos</span>
         </div>
+        <button class="btn-toggle" onclick="toggleSidebar()" title="Colapsar menú">
+          ☰
+        </button>
       </div>
+
       <ul class="nav-menu">
         <li class="nav-item">
-          <a class="nav-link active" data-page="dashboard" onclick="mostrarPagina('dashboard')">
-            <span>Dashboard</span>
+          <a class="nav-link active" data-page="dashboard" onclick="mostrarPagina('dashboard')" title="Dashboard">
+            <i class="fi fi-rr-apps nav-icon"></i>
+            <span class="nav-text">Dashboard</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-page="productos" onclick="mostrarPagina('productos')">
-            <span>Productos</span>
+          <a class="nav-link" data-page="productos" onclick="mostrarPagina('productos')" title="Productos">
+            <i class="fi fi-rr-box nav-icon"></i>
+            <span class="nav-text">Productos</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-page="inventario" onclick="mostrarPagina('inventario')">
-            <span>Inventario</span>
+          <a class="nav-link" data-page="inventario" onclick="mostrarPagina('inventario')" title="Inventario">
+            <i class="fi fi-rr-clipboard-list nav-icon"></i>
+            <span class="nav-text">Inventario</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-page="movimientos" onclick="mostrarPagina('movimientos')">
-            <span>Movimientos</span>
+          <a class="nav-link" data-page="movimientos" onclick="mostrarPagina('movimientos')" title="Movimientos">
+            <i class="fi fi-rr-exchange nav-icon"></i>
+            <span class="nav-text">Movimientos</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-page="pedidos" onclick="mostrarPagina('pedidos')">
-            <span>Pedidos</span>
+          <a class="nav-link" data-page="pedidos" onclick="mostrarPagina('pedidos')" title="Pedidos">
+            <i class="fi fi-rr-shopping-cart nav-icon"></i>
+            <span class="nav-text">Pedidos</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-page="clientes" onclick="mostrarPagina('clientes')">
-            <span>clientes</span>
+          <a class="nav-link" data-page="reportes" onclick="mostrarPagina('reportes')" title="Reportes">
+            <i class="fi fi-rr-chart-histogram nav-icon"></i>
+            <span class="nav-text">Reportes</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-page="asistente" onclick="mostrarPagina('asistente')">
-            <span>Asistente IA</span>
+          <a class="nav-link" data-page="clientes" onclick="mostrarPagina('clientes')" title="Clientes">
+            <i class="fi fi-rr-users nav-icon"></i>
+            <span class="nav-text">Clientes</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-page="asistente" onclick="mostrarPagina('asistente')" title="Asistente IA">
+            <i class="fi fi-rr-robot nav-icon"></i>
+            <span class="nav-text">Asistente IA</span>
           </a>
         </li>
       </ul>
+
       <div class="user-info">
         <div class="user-info-top">
           <div class="avatar" id="userAvatar">OO</div>
-          <div>
+          <div class="user-details">
             <div style="font-weight:600;font-size:0.9rem;" id="userName">Usuario</div>
             <div style="font-size:0.75rem;color:#94a3b8;" id="userRole">Rol</div>
           </div>
         </div>
-        <button class="btn-logout" onclick="logout()">
-          <span>🚪</span> <span>Cerrar sesión</span>
+        <button class="btn-logout" onclick="logout()" title="Cerrar sesión">
+          <i class="fi fi-rr-sign-out-alt"></i>
+          <span class="logout-text">Cerrar sesión</span>
         </button>
       </div>
     </aside>
@@ -110,7 +131,7 @@
         <div class="header">
           <h2>Dashboard</h2>
           <div class="search-box">
-            <span>🔍</span>
+            <i class="fi fi-rr-search"></i>
             <input type="text" placeholder="Buscar productos, pedidos...">
           </div>
         </div>
@@ -120,28 +141,39 @@
               <div class="value" id="statProductos">0</div>
               <div class="label">Productos activos</div>
             </div>
-            <div class="card-icon bg-blue">📦</div>
+            <div class="card-icon bg-blue">
+              <i class="fi fi-rr-box"></i>
+            </div>
           </div>
+
           <div class="card card-stat">
             <div>
               <div class="value" id="statStockBajo">0</div>
               <div class="label">Stock bajo</div>
             </div>
-            <div class="card-icon bg-yellow">⚠️</div>
+            <div class="card-icon bg-yellow">
+              <i class="fi fi-rr-exclamation"></i>
+            </div>
           </div>
+
           <div class="card card-stat">
             <div>
               <div class="value" id="statPedidos">0</div>
               <div class="label">Pedidos pendientes</div>
             </div>
-            <div class="card-icon bg-blue">🛒</div>
+            <div class="card-icon bg-blue">
+              <i class="fi fi-rr-shopping-cart"></i>
+            </div>
           </div>
+
           <div class="card card-stat">
             <div>
               <div class="value" id="statMovimientos">0</div>
               <div class="label">Movimientos</div>
             </div>
-            <div class="card-icon bg-green">🔄</div>
+            <div class="card-icon bg-green">
+              <i class="fi fi-rr-exchange"></i>
+            </div>
           </div>
         </div>
         <div class="table-container">
@@ -172,7 +204,7 @@
         <div class="table-container">
           <div class="table-header">
             <div class="search-box" style="width:320px;">
-              <span>🔍</span>
+              <i class="fi fi-rr-search"></i>
               <input type="text" id="searchProductos" placeholder="Buscar por nombre o SKU..."
                 oninput="renderProductos()">
             </div>
@@ -189,7 +221,7 @@
               <tr>
                 <th>Producto</th>
                 <th>Categoría</th>
-                <th>Precio</th>
+                <th>Precio menudeo</th>
                 <th>Stock</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -275,7 +307,82 @@
         </div>
       </div>
 
-       <!-- ========== CLIENTES HACER AJUSTES ========== -->
+      <!-- ========== REPORTES ========== -->
+      <div id="reportes" class="page">
+        <div class="header">
+          <h2>Reportes</h2>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+
+            <!-- Tipo de reporte -->
+            <div class="form-group" style="margin: 0; min-width: 220px;">
+              <label>Tipo de reporte</label>
+              <select id="tipoReporte" onchange="cambiarFiltrosReporte()">
+                <option value="stock">Stock actual</option>
+                <option value="stock-bajo">Productos con stock bajo</option>
+                <option value="movimientos">Movimientos de inventario</option>
+                <option value="pedidos">Pedidos</option>
+                <option value="clientes">Clientes</option>
+              </select>
+            </div>
+
+            <!-- Filtro de fechas (se muestra según el reporte) -->
+            <div class="form-group" id="filtroFechas" style="margin: 0; display: none;">
+              <label>Desde</label>
+              <input type="date" id="fechaDesde">
+            </div>
+            <div class="form-group" id="filtroFechas2" style="margin: 0; display: none;">
+              <label>Hasta</label>
+              <input type="date" id="fechaHasta">
+            </div>
+
+            <!-- Filtro de estado (para pedidos) -->
+            <div class="form-group" id="filtroEstado" style="margin: 0; display: none; min-width: 180px;">
+              <label>Estado</label>
+              <select id="estadoPedido">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En preparación">En preparación</option>
+                <option value="Enviado">Enviado</option>
+                <option value="Entregado">Entregado</option>
+                <option value="Cancelado">Cancelado</option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="generarReporte()">
+              <i class="fi fi-rr-search"></i> Generar
+            </button>
+
+            <button class="btn btn-secondary" onclick="exportarExcel()" title="Exportar a Excel">
+              <i class="fi fi-rr-file-excel"></i> Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="table-container">
+          <div class="table-header">
+            <h3 id="tituloReporte">Stock actual</h3>
+            <span id="totalRegistros" style="color: var(--gray); font-size: 0.9rem;"></span>
+          </div>
+          <table>
+            <thead id="theadReporte">
+              <!-- Se llena dinámicamente -->
+            </thead>
+            <tbody id="tbodyReporte">
+              <tr>
+                <td colspan="10" style="text-align:center; padding: 2rem; color: var(--gray);">
+                  Selecciona un tipo de reporte y haz clic en Generar
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========== CLIENTES HACER AJUSTES ========== -->
       <div id="clientes" class="page">
         <div class="header">
           <h2>clientes</h2>
@@ -284,8 +391,8 @@
         <div class="table-container">
           <div class="table-header">
             <div class="search-box" style="width:320px;">
-              <input type="text" id="searchCliente" placeholder="Buscar por nombre o id"
-                oninput="renderCliente()">
+              <i class="fi fi-rr-search"></i>
+              <input type="text" id="searchCliente" placeholder="Buscar por nombre o id" oninput="renderCliente()">
             </div>
             <select id="filtroCategoria" onchange="renderCliente()"
               style="padding:0.5rem 1rem;border-radius:8px;border:1.5px solid #d1d5db;">
@@ -314,13 +421,13 @@
       <!-- ========== ASISTENTE IA ========== -->
       <div id="asistente" class="page">
         <div class="header">
-          <h2>Asistente Virtual con IA</h2>
+          <h2>Asistente Virtual</h2>
         </div>
         <div class="chat-container">
           <div class="chat-header">
-            <div class="logo-icon" style="width:36px;height:36px;font-size:18px;">🤖</div>
+            <i class="fi fi-rr-robot nav-icon"></i>
             <div>
-              <strong>Asistente Mariana</strong>
+              <strong>Mariana IA</strong>
               <div style="font-size:0.8rem;opacity:0.9;">Consultas de inventario y recomendaciones</div>
             </div>
           </div>
@@ -509,56 +616,57 @@
       </div>
     </div>
   </div>
+
   <!-- ========== MODAL REGISTRAR / EDITAR CLIENTE ========== -->
-<div id="modalCliente" class="modal">
-  <div class="modal-content" style="max-width: 520px;">
-    <div class="modal-header">
-      <h3 id="modalClienteTitulo">Registrar Cliente</h3>
-      <button class="modal-close" onclick="cerrarModal('modalCliente')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="clienteId">
-
-      <div class="form-group">
-        <label>Nombre completo *</label>
-        <input type="text" id="clienteNombre" placeholder="Ej. Juan Pérez" required>
+  <div class="modal-overlay" id="modalCliente">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalClienteTitulo">Registrar Cliente</h3>
+        <button class="modal-close" onclick="cerrarModal('modalCliente')">&times;</button>
       </div>
+      <div class="modal-body">
+        <input type="hidden" id="clienteId">
 
-      <div class="form-group">
-        <label>Negocio</label>
-        <input type="text" id="clienteNegocio" placeholder="Ej. Comercial La Central">
-      </div>
+        <div class="form-group">
+          <label>Nombre completo *</label>
+          <input type="text" id="clienteNombre" placeholder="Ej. Juan Pérez" required>
+        </div>
 
-      <div class="form-group">
-        <label>Correo</label>
-        <input type="email" id="clienteCorreo" placeholder="ejemplo@gmail.com">
-      </div>
+        <div class="form-group">
+          <label>Negocio</label>
+          <input type="text" id="clienteNegocio" placeholder="Ej. Comercial La Central">
+        </div>
 
-      <div class="form-group">
-        <label>Teléfono</label>
-        <input type="text" id="clienteTelefono" placeholder="7221234567">
-      </div>
+        <div class="form-group">
+          <label>Correo</label>
+          <input type="email" id="clienteCorreo" placeholder="ejemplo@gmail.com">
+        </div>
 
-      <div class="form-group">
-        <label>Dirección</label>
-        <input type="text" id="clienteDireccion" placeholder="Toluca, Estado de México">
-      </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="clienteTelefono" placeholder="7221234567">
+        </div>
 
-      <div class="form-group">
-        <label>Categoría</label>
-        <select id="clienteCategoria">
-          <option value="">Seleccionar...</option>
-          <option value="1">Mayorista</option>
-          <option value="2">Menudista</option>
-        </select>
+        <div class="form-group">
+          <label>Dirección</label>
+          <input type="text" id="clienteDireccion" placeholder="Toluca, Estado de México">
+        </div>
+
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="clienteCategoria">
+            <option value="">Seleccionar...</option>
+            <option value="1">Mayorista</option>
+            <option value="2">Menudista</option>
+          </select>
+        </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="cerrarModal('modalCliente')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalCliente')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+      </div>
     </div>
   </div>
-</div>
 
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>

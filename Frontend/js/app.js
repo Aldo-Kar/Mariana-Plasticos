@@ -9,8 +9,8 @@
 
 const API_BASE = 'http://localhost:8080/api';
 let usuarioActual = null;
-let cache = { 
-  productos: [], categorias: [], inventario: [], movimientos: [], 
+let cache = {
+  productos: [], categorias: [], inventario: [], movimientos: [],
   pedidos: [], clientes: [], usuarios: []
 };
 
@@ -26,29 +26,29 @@ async function api(ruta, opciones = {}) {
   return cuerpo.data !== undefined ? cuerpo.data : cuerpo;
 }
 
-const get  = ruta => api(ruta);
+const get = ruta => api(ruta);
 const post = (ruta, datos) => api(ruta, { method: 'POST', body: JSON.stringify(datos) });
-const put  = (ruta, datos) => api(ruta, { method: 'PUT',  body: JSON.stringify(datos) });
-const del  = ruta => api(ruta, { method: 'DELETE' });
+const put = (ruta, datos) => api(ruta, { method: 'PUT', body: JSON.stringify(datos) });
+const del = ruta => api(ruta, { method: 'DELETE' });
 
-const esc   = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n)||0);
-const date  = v => v ? new Date(v).toLocaleString('es-MX') : '—';
-const byId  = (arr, key, id) => arr.find(x => Number(x[key]) === Number(id));
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number(n) || 0);
+const date = v => v ? new Date(v).toLocaleString('es-MX') : '—';
+const byId = (arr, key, id) => arr.find(x => Number(x[key]) === Number(id));
 
-function showError(error) { 
-  console.error(error); 
-  alert(`No se pudo completar la operación.\n${error.message || error}\n\nVerifica que Spring Boot esté ejecutándose y conectado a MySQL.`); 
+function showError(error) {
+  console.error(error);
+  alert(`No se pudo completar la operación.\n${error.message || error}\n\nVerifica que Spring Boot esté ejecutándose y conectado a MySQL.`);
 }
 
 async function cargarDatos() {
-  const recursos = ['productos','categorias','inventario','movimientos','pedidos','clientes','usuarios'];
-  const resultados = await Promise.allSettled(recursos.map(r => get('/'+r)));
-  resultados.forEach((r,i) => { 
-    cache[recursos[i]] = r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : []; 
+  const recursos = ['productos', 'categorias', 'inventario', 'movimientos', 'pedidos', 'clientes', 'usuarios'];
+  const resultados = await Promise.allSettled(recursos.map(r => get('/' + r)));
+  resultados.forEach((r, i) => {
+    cache[recursos[i]] = r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : [];
   });
-  resultados.forEach((r,i) => { 
-    if (r.status === 'rejected') console.warn(`No se pudo cargar ${recursos[i]}`, r.reason); 
+  resultados.forEach((r, i) => {
+    if (r.status === 'rejected') console.warn(`No se pudo cargar ${recursos[i]}`, r.reason);
   });
 }
 
@@ -57,59 +57,65 @@ async function login() {
   const correo = document.getElementById('loginEmail').value.trim();
   const contrasena = document.getElementById('loginPass').value;
   const errorEl = document.getElementById('loginError');
-  if (!correo || !contrasena) { 
-    errorEl.textContent = 'Completa todos los campos'; 
-    errorEl.style.display = 'block'; 
-    return; 
+  if (!correo || !contrasena) {
+    errorEl.textContent = 'Completa todos los campos';
+    errorEl.style.display = 'block';
+    return;
   }
   try {
     const u = await post('/auth/login', { correo, contrasena });
-    usuarioActual = u; 
+    usuarioActual = u;
     localStorage.setItem('usuario', JSON.stringify(u));
-    errorEl.style.display = 'none'; 
-    document.getElementById('login').style.display = 'none'; 
+    errorEl.style.display = 'none';
+    document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    pintarUsuario(); 
-    await cargarDatos(); 
+    pintarUsuario();
+    await cargarDatos();
     await mostrarPagina('dashboard');
-  } catch (e) { 
-    errorEl.textContent = e.message || 'No se pudo conectar con el servidor'; 
-    errorEl.style.display = 'block'; 
+  } catch (e) {
+    errorEl.textContent = e.message || 'No se pudo conectar con el servidor';
+    errorEl.style.display = 'block';
   }
 }
 
 function pintarUsuario() {
   const nombre = usuarioActual?.nombre || 'Usuario';
-  document.getElementById('userAvatar').textContent = nombre.split(/\s+/).map(n => n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('userAvatar').textContent = nombre.split(/\s+/).map(n => n[0]).join('').slice(0, 2).toUpperCase();
   document.getElementById('userName').textContent = nombre;
   document.getElementById('userRole').textContent = usuarioActual?.idRol === 1 ? 'Administrador' : (usuarioActual?.rol || 'Usuario');
 }
 
-function logout() { 
-  usuarioActual = null; 
-  localStorage.removeItem('usuario'); 
-  document.getElementById('app').style.display = 'none'; 
-  document.getElementById('login').style.display = 'flex'; 
-  document.getElementById('loginEmail').value = ''; 
-  document.getElementById('loginPass').value = ''; 
+function logout() {
+  usuarioActual = null;
+  localStorage.removeItem('usuario');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value = '';
 }
 
 async function mostrarPagina(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === id));
-  try { 
-    await cargarDatos(); 
+  try {
+    await cargarDatos();
     const renders = {
-   dashboard: renderDashboard,
-   productos: renderProductos,
-   inventario: renderInventario,
-   movimientos: renderMovimientos,
-   pedidos: renderPedidos,
-   clientes: renderClientes          // ← agrega esta línea
-  };
-    if (renders[id]) await renders[id](); 
-  } catch(e) { showError(e); }
+      dashboard: renderDashboard,
+      productos: renderProductos,
+      inventario: renderInventario,
+      movimientos: renderMovimientos,
+      pedidos: renderPedidos,
+      reportes: () => { /* no necesita cargar nada especial */ },
+      clientes: renderClientes          // ← agrega esta línea
+    };
+    if (renders[id]) await renders[id]();
+  } catch (e) { showError(e); }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('collapsed');
 }
 
 // ==================== DASHBOARD ====================
@@ -119,33 +125,33 @@ async function renderDashboard() {
     const p = byId(cache.productos, 'idProducto', i.idProducto);
     return p && Number(i.cantidadActual) <= Number(p.stockMinimo || 0);
   }).length;
-  document.getElementById('statPedidos').textContent = cache.pedidos.filter(p => ['Pendiente','En preparación'].includes(p.estado)).length;
+  document.getElementById('statPedidos').textContent = cache.pedidos.filter(p => ['Pendiente', 'En preparación'].includes(p.estado)).length;
   document.getElementById('statMovimientos').textContent = cache.movimientos.filter(m =>
     m.fechaMovimiento && new Date(m.fechaMovimiento).toDateString() === new Date().toDateString()
   ).length;
-  
+
   const bajo = cache.inventario.filter(i => {
     const p = byId(cache.productos, 'idProducto', i.idProducto);
     return p && Number(i.cantidadActual) <= Number(p.stockMinimo || 0);
   });
-  
+
   document.getElementById('tablaStockBajo').innerHTML = bajo.length
     ? bajo.map(i => {
-        const p = byId(cache.productos, 'idProducto', i.idProducto);
-        return `<tr>
+      const p = byId(cache.productos, 'idProducto', i.idProducto);
+      return `<tr>
           <td>${esc(p?.nombre)}</td>
-          <td>${esc(byId(cache.categorias,'idCategoria',p?.idCategoria)?.nombre || '—')}</td>
+          <td>${esc(byId(cache.categorias, 'idCategoria', p?.idCategoria)?.nombre || '—')}</td>
           <td>${esc(i.cantidadActual)}</td>
           <td>${esc(p?.stockMinimo ?? 0)}</td>
           <td><span class="badge badge-danger">Stock bajo</span></td>
         </tr>`;
-      }).join('')
+    }).join('')
     : '<tr><td colspan="5" style="text-align:center">No hay productos con stock bajo</td></tr>';
 }
 
 // ==================== PRODUCTOS ====================
 async function renderProductos() {
-  cache.productos = await get('/productos'); 
+  cache.productos = await get('/productos');
   cache.categorias = await get('/categorias');
   cache.inventario = await get('/inventario');
 
@@ -159,31 +165,31 @@ async function renderProductos() {
   };
 
   const lista = cache.productos.filter(p => {
-    const coincideTexto = (`${p.nombre||''} ${p.sku||''}`).toLowerCase().includes(texto);
+    const coincideTexto = (`${p.nombre || ''} ${p.sku || ''}`).toLowerCase().includes(texto);
     const coincideCat = !catFiltro || String(p.idCategoria) === String(catFiltro);
     return coincideTexto && coincideCat;
   });
-  
+
   document.getElementById('tablaProductos').innerHTML = lista.length
     ? lista.map(p => {
-        const stock = stockReal(p.idProducto);   // ✅ Stock tomado del Inventario
-        return `<tr>
+      const stock = stockReal(p.idProducto);   // ✅ Stock tomado del Inventario
+      return `<tr>
           <td><strong>${esc(p.nombre)}</strong><br><small>${esc(p.sku || 'Sin SKU')}</small></td>
-          <td>${esc(byId(cache.categorias,'idCategoria',p.idCategoria)?.nombre || p.idCategoria || '—')}</td>
+          <td>${esc(byId(cache.categorias, 'idCategoria', p.idCategoria)?.nombre || p.idCategoria || '—')}</td>
           <td>${money(p.precioUnitario)}</td>
           <td><strong>${esc(stock)}</strong></td>
-          <td><span class="badge ${p.estado==='Activo'?'badge-success':'badge-danger'}">${esc(p.estado||'—')}</span></td>
+          <td><span class="badge ${p.estado === 'Activo' ? 'badge-success' : 'badge-danger'}">${esc(p.estado || '—')}</span></td>
           <td class="actions">
             <button class="btn-icon" title="Editar" onclick="abrirModalProducto(${p.idProducto})">✏️</button>
             <button class="btn-icon danger" title="Eliminar" onclick="eliminarProducto(${p.idProducto})">🗑️</button>
           </td>
         </tr>`;
-      }).join('')
+    }).join('')
     : '<tr><td colspan="6" style="text-align:center">No hay productos registrados</td></tr>';
-  
+
   // Llenar select del modal
-  const sel = document.getElementById('prodCategoria'); 
-  if (sel) sel.innerHTML = cache.categorias.map(c => 
+  const sel = document.getElementById('prodCategoria');
+  if (sel) sel.innerHTML = cache.categorias.map(c =>
     `<option value="${c.idCategoria}">${esc(c.nombre)}</option>`
   ).join('');
 
@@ -196,18 +202,18 @@ async function renderProductos() {
 }
 
 async function abrirModalProducto(id = null) {
-  await renderProductos(); 
+  await renderProductos();
   const p = id ? byId(cache.productos, 'idProducto', id) : null;
 
-  document.getElementById('prodId').value = p?.idProducto || ''; 
+  document.getElementById('prodId').value = p?.idProducto || '';
   document.getElementById('modalProductoTitle').textContent = p ? 'Editar producto' : 'Nuevo producto';
-  
-  document.getElementById('prodSku').value         = p?.sku || '';
-  document.getElementById('prodNombre').value      = p?.nombre || '';
+
+  document.getElementById('prodSku').value = p?.sku || '';
+  document.getElementById('prodNombre').value = p?.nombre || '';
   document.getElementById('prodDescripcion').value = p?.descripcion || '';
-  document.getElementById('prodPrecio').value      = p?.precioUnitario ?? '';
-  document.getElementById('prodStockMin').value    = p?.stockMinimo ?? 10;
-  document.getElementById('prodEstado').value      = p?.estado || 'Activo';
+  document.getElementById('prodPrecio').value = p?.precioUnitario ?? '';
+  document.getElementById('prodStockMin').value = p?.stockMinimo ?? 10;
+  document.getElementById('prodEstado').value = p?.estado || 'Activo';
 
   // Stock actual tomado del Inventario
   const stockActualEl = document.getElementById('prodStockActual');
@@ -219,7 +225,7 @@ async function abrirModalProducto(id = null) {
       stockActualEl.value = 0;
     }
   }
-  
+
   if (p?.idCategoria) {
     document.getElementById('prodCategoria').value = p.idCategoria;
   }
@@ -232,21 +238,21 @@ async function guardarProducto() {
   const stockActual = Number(document.getElementById('prodStockActual')?.value || 0);
 
   const datos = {
-    sku:            document.getElementById('prodSku').value.trim(),
-    nombre:         document.getElementById('prodNombre').value.trim(),
-    descripcion:    document.getElementById('prodDescripcion').value.trim(),
+    sku: document.getElementById('prodSku').value.trim(),
+    nombre: document.getElementById('prodNombre').value.trim(),
+    descripcion: document.getElementById('prodDescripcion').value.trim(),
     precioUnitario: Number(document.getElementById('prodPrecio').value || 0),
-    stockMinimo:    Number(document.getElementById('prodStockMin').value || 10),
-    stockActual:    stockActual,
-    estado:         document.getElementById('prodEstado').value,
-    idCategoria:    Number(document.getElementById('prodCategoria').value)
+    stockMinimo: Number(document.getElementById('prodStockMin').value || 10),
+    stockActual: stockActual,
+    estado: document.getElementById('prodEstado').value,
+    idCategoria: Number(document.getElementById('prodCategoria').value)
   };
-  
+
   if (!datos.sku || !datos.nombre || !datos.idCategoria) {
     alert('SKU, nombre y categoría son obligatorios.');
     return;
   }
-  
+
   try {
     let idProducto = id;
 
@@ -277,38 +283,38 @@ async function guardarProducto() {
         ubicacion: 'Almacén General'
       });
     }
-    
+
     cerrarModal('modalProducto');
     await cargarDatos();
     await renderProductos();
     await renderInventario();
     await renderDashboard();
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
-async function eliminarProducto(id) { 
-  if (!confirm('¿Eliminar este producto?\n\nSi tiene inventario o movimientos relacionados, la base de datos puede impedirlo.')) return; 
+async function eliminarProducto(id) {
+  if (!confirm('¿Eliminar este producto?\n\nSi tiene inventario o movimientos relacionados, la base de datos puede impedirlo.')) return;
   try {
     await del(`/productos/${id}`);
     await cargarDatos();
     await renderProductos();
     await renderDashboard();
-  } catch(e) { 
+  } catch (e) {
     alert('No se pudo eliminar el producto.\n\nProbablemente tiene registros en Inventario o Movimientos.\nElimina primero esos registros relacionados.');
-  } 
+  }
 }
 
 // ==================== INVENTARIO ====================
 async function renderInventario() {
   const [inv, prods] = await Promise.all([get('/inventario'), get('/productos')]);
-  cache.inventario = inv; 
+  cache.inventario = inv;
   cache.productos = prods;
-  
+
   document.getElementById('tablaInventario').innerHTML = inv.length
     ? inv.map(i => {
-        const p = byId(prods, 'idProducto', i.idProducto);
-        const bajo = p && Number(i.cantidadActual) <= Number(p.stockMinimo || 0);
-        return `<tr>
+      const p = byId(prods, 'idProducto', i.idProducto);
+      const bajo = p && Number(i.cantidadActual) <= Number(p.stockMinimo || 0);
+      return `<tr>
           <td>${esc(p?.nombre || `Producto #${i.idProducto}`)}</td>
           <td>${esc(i.ubicacion || '—')}</td>
           <td>${esc(i.cantidadActual ?? 0)}</td>
@@ -319,7 +325,7 @@ async function renderInventario() {
             <button class="btn-icon danger" title="Eliminar" onclick="eliminarInventario(${i.idInventario})">🗑️</button>
           </td>
         </tr>`;
-      }).join('')
+    }).join('')
     : '<tr><td colspan="6" style="text-align:center">No hay registros de inventario</td></tr>';
 }
 
@@ -329,7 +335,7 @@ async function abrirModalInventario(id = null) {
   const sel = document.getElementById('invProducto');
   sel.innerHTML = cache.productos.map(p => `<option value="${p.idProducto}">${esc(p.nombre)}</option>`).join('');
   sel.disabled = !!i;
-  
+
   document.querySelector('#modalInventario .modal-header h3').textContent = i ? 'Editar Inventario' : 'Agregar al Inventario';
   document.getElementById('invId').value = i?.idInventario || '';
   if (i) sel.value = i.idProducto;
@@ -343,12 +349,12 @@ async function guardarInventario() {
   const cantidad = Number(document.getElementById('invCantidad').value);
   const idProducto = Number(document.getElementById('invProducto').value);
   const ubicacion = document.getElementById('invUbicacion').value.trim();
-  
+
   if (!Number.isInteger(cantidad) || cantidad < 0) {
     alert('La cantidad debe ser un entero igual o mayor que cero.');
     return;
   }
-  
+
   try {
     if (id) {
       await put(`/inventario/${id}`, { cantidadActual: cantidad, ubicacion });
@@ -362,12 +368,12 @@ async function guardarInventario() {
       await post('/inventario', { idProducto, cantidadActual: cantidad, ubicacion });
       await put(`/productos/${idProducto}`, { stockActual: cantidad });
     }
-    
+
     cerrarModal('modalInventario');
     await cargarDatos();
     await renderInventario();
     await renderDashboard();
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
 async function eliminarInventario(id) {
@@ -376,7 +382,7 @@ async function eliminarInventario(id) {
     await del(`/inventario/${id}`);
     await renderInventario();
     await renderDashboard();
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
 // ==================== MOVIMIENTOS ====================
@@ -385,23 +391,23 @@ async function renderMovimientos() {
   const usuarios = await get('/usuarios');
   cache.usuarios = usuarios;
   const prods = cache.productos.length ? cache.productos : await get('/productos');
-  
+
   document.getElementById('tablaMovimientos').innerHTML = cache.movimientos.length
     ? cache.movimientos
-        .slice()
-        .sort((a,b) => new Date(b.fechaMovimiento) - new Date(a.fechaMovimiento))
-        .map(m => {
-          // Prioridad 1: campos directos del backend
-          let nombreProd = '—';
-          let cant = '—';
-          
-          if (m.idProducto) {
-            const p = prods.find(x => Number(x.idProducto) === Number(m.idProducto));
-            nombreProd = p ? p.nombre : `Producto #${m.idProducto}`;
-          }
-          if (m.cantidad != null) cant = m.cantidad;
-          
-          return `<tr>
+      .slice()
+      .sort((a, b) => new Date(b.fechaMovimiento) - new Date(a.fechaMovimiento))
+      .map(m => {
+        // Prioridad 1: campos directos del backend
+        let nombreProd = '—';
+        let cant = '—';
+
+        if (m.idProducto) {
+          const p = prods.find(x => Number(x.idProducto) === Number(m.idProducto));
+          nombreProd = p ? p.nombre : `Producto #${m.idProducto}`;
+        }
+        if (m.cantidad != null) cant = m.cantidad;
+
+        return `<tr>
             <td>${date(m.fechaMovimiento)}</td>
             <td>${esc(m.tipoMovimiento || '—')}</td>
             <td>${esc(nombreProd)}</td>
@@ -410,7 +416,7 @@ async function renderMovimientos() {
             <td>${esc(m.observaciones || '—')}</td>
             <td><button class="btn-icon danger" title="Eliminar" onclick="eliminarMovimiento(${m.idMovimiento})">🗑️</button></td>
           </tr>`;
-        }).join('')
+      }).join('')
     : '<tr><td colspan="7" style="text-align:center">No hay movimientos registrados</td></tr>';
 }
 
@@ -425,26 +431,26 @@ async function registrarEntradaSalida(tipo) {
     document.getElementById('movCantidad').value = 1;
     document.getElementById('movObservaciones').value = '';
     document.getElementById('modalMovimiento').classList.add('active');
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
 async function guardarMovimiento() {
-  const tipo       = document.getElementById('movTipo').value;
+  const tipo = document.getElementById('movTipo').value;
   const idProducto = Number(document.getElementById('movProducto').value);
-  const cantidad   = Number(document.getElementById('movCantidad').value);
-  const obs        = document.getElementById('movObservaciones').value.trim();   // ✅ Solo lo que escribe el usuario
-  
+  const cantidad = Number(document.getElementById('movCantidad').value);
+  const obs = document.getElementById('movObservaciones').value.trim();   // ✅ Solo lo que escribe el usuario
+
   if (!idProducto || !Number.isInteger(cantidad) || cantidad < 1) {
     alert('Selecciona un producto e indica una cantidad entera mayor que cero.');
     return;
   }
-  
+
   const usuarioId = usuarioActual?.idUsuario;
   if (!usuarioId) {
     alert('No se identifica el usuario de la sesión. Vuelve a iniciar sesión.');
     return;
   }
-  
+
   try {
     const inventarios = await get('/inventario');
     const inv = byId(inventarios, 'idProducto', idProducto);
@@ -457,27 +463,27 @@ async function guardarMovimiento() {
       alert('No hay existencias suficientes para registrar esta salida.');
       return;
     }
-    
+
     // ✅ Observaciones LIMPIAS (solo lo que escribió el usuario)
     await post('/movimientos', {
-      idUsuario:      usuarioId, 
-      tipoMovimiento: tipo, 
-      idProducto:     idProducto,
-      cantidad:       cantidad,
-      observaciones:  obs || null
+      idUsuario: usuarioId,
+      tipoMovimiento: tipo,
+      idProducto: idProducto,
+      cantidad: cantidad,
+      observaciones: obs || null
     });
-    
+
     // Actualizar inventario y stock del producto
     await put(`/inventario/${inv.idInventario}`, { cantidadActual: nueva, ubicacion: inv.ubicacion });
     await put(`/productos/${idProducto}`, { stockActual: nueva });
-    
+
     cerrarModal('modalMovimiento');
     await cargarDatos();
     await renderMovimientos();
     await renderInventario();
     await renderDashboard();
     alert('Movimiento guardado y existencia actualizada.');
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
 async function eliminarMovimiento(id) {
@@ -485,19 +491,19 @@ async function eliminarMovimiento(id) {
   try {
     await del(`/movimientos/${id}`);
     await renderMovimientos();
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
 // ==================== PEDIDOS ====================
 async function renderPedidos() {
   const [pedidos, clientes] = await Promise.all([get('/pedidos'), get('/clientes')]);
-  cache.pedidos = pedidos; 
+  cache.pedidos = pedidos;
   cache.clientes = clientes;
-  
+
   document.getElementById('tablaPedidos').innerHTML = pedidos.length
     ? pedidos.map(p => `<tr>
         <td>#${p.idPedido}</td>
-        <td>${esc(byId(clientes,'idCliente',p.idCliente)?.nombre || `Cliente #${p.idCliente}`)}</td>
+        <td>${esc(byId(clientes, 'idCliente', p.idCliente)?.nombre || `Cliente #${p.idCliente}`)}</td>
         <td>${date(p.fechaPedido)}</td>
         <td>${money(p.total)}</td>
         <td><span class="badge">${esc(p.estado || '—')}</span></td>
@@ -515,7 +521,7 @@ async function abrirModalPedido(id = null) {
   const p = id ? byId(cache.pedidos, 'idPedido', id) : null;
   document.getElementById('pedId').value = p?.idPedido || '';
   document.getElementById('modalPedidoTitle').textContent = p ? 'Editar pedido' : 'Nuevo pedido';
-  
+
   document.getElementById('pedCliente').innerHTML = cache.clientes
     .map(c => `<option value="${c.idCliente}">${esc(c.nombre)}</option>`).join('');
   document.getElementById('pedProducto').innerHTML = cache.productos
@@ -523,7 +529,7 @@ async function abrirModalPedido(id = null) {
   document.getElementById('pedCantidad').value = 1;
   document.getElementById('pedEstado').value = p?.estado || 'Pendiente';
   document.getElementById('pedObservaciones').value = p?.observaciones || '';
-  
+
   if (p) {
     document.getElementById('pedCliente').value = p.idCliente;
     document.getElementById('pedProducto').disabled = true;
@@ -532,37 +538,37 @@ async function abrirModalPedido(id = null) {
     document.getElementById('pedProducto').disabled = false;
     document.getElementById('pedCantidad').disabled = false;
   }
-  
+
   document.getElementById('modalPedido').classList.add('active');
 }
 
 async function guardarPedido() {
-  const id          = document.getElementById('pedId').value;
-  const cliente     = Number(document.getElementById('pedCliente').value);
-  const producto    = byId(cache.productos, 'idProducto', document.getElementById('pedProducto').value);
-  const cantidad    = Number(document.getElementById('pedCantidad').value);
-  const estado      = document.getElementById('pedEstado').value;
+  const id = document.getElementById('pedId').value;
+  const cliente = Number(document.getElementById('pedCliente').value);
+  const producto = byId(cache.productos, 'idProducto', document.getElementById('pedProducto').value);
+  const cantidad = Number(document.getElementById('pedCantidad').value);
+  const estado = document.getElementById('pedEstado').value;
   const observaciones = document.getElementById('pedObservaciones').value.trim();  // ✅ Solo lo del usuario
-  
+
   if (!id && (!cliente || !producto || !Number.isInteger(cantidad) || cantidad < 1)) {
     alert('Selecciona cliente, producto y cantidad válida.');
     return;
   }
-  
+
   try {
     if (id) {
       const existente = byId(cache.pedidos, 'idPedido', id);
-      await put(`/pedidos/${id}`, { 
-        estado, 
-        total: existente?.total || 0, 
-        observaciones 
+      await put(`/pedidos/${id}`, {
+        estado,
+        total: existente?.total || 0,
+        observaciones
       });
     } else {
       // ✅ Observaciones limpias
       await post('/pedidos', {
-        idCliente:    cliente, 
-        estado, 
-        total:        Number(producto.precioUnitario || 0) * cantidad, 
+        idCliente: cliente,
+        estado,
+        total: Number(producto.precioUnitario || 0) * cantidad,
         observaciones: observaciones || null
       });
     }
@@ -571,7 +577,7 @@ async function guardarPedido() {
     await renderPedidos();
     await renderDashboard();
     alert('Pedido guardado correctamente.');
-  } catch(e) { showError(e); }
+  } catch (e) { showError(e); }
 }
 
 async function eliminarPedido(id) {
@@ -580,9 +586,93 @@ async function eliminarPedido(id) {
     await del(`/pedidos/${id}`);
     await renderPedidos();
     await renderDashboard();
-  } catch(e) { 
+  } catch (e) {
     alert('No se pudo eliminar el pedido.\nProbablemente tiene detalles asociados.');
   }
+}
+
+function cambiarFiltrosReporte() {
+  const tipo = document.getElementById('tipoReporte').value;
+  const mostrarFechas = ['movimientos', 'pedidos'].includes(tipo);
+  const mostrarEstado = tipo === 'pedidos';
+
+  document.getElementById('filtroFechas').style.display = mostrarFechas ? 'block' : 'none';
+  document.getElementById('filtroFechas2').style.display = mostrarFechas ? 'block' : 'none';
+  document.getElementById('filtroEstado').style.display = mostrarEstado ? 'block' : 'none';
+}
+
+async function generarReporte() {
+  const tipo = document.getElementById('tipoReporte').value;
+  await cargarDatos();
+
+  const thead = document.getElementById('theadReporte');
+  const tbody = document.getElementById('tbodyReporte');
+  const titulo = document.getElementById('tituloReporte');
+  const total = document.getElementById('totalRegistros');
+
+  let htmlHead = '';
+  let htmlBody = '';
+  let datos = [];
+
+  if (tipo === 'stock') {
+    titulo.textContent = 'Stock actual';
+    htmlHead = `<tr>
+      <th>Producto</th><th>SKU</th><th>Categoría</th>
+      <th>Stock actual</th><th>Stock mínimo</th><th>Estado</th>
+    </tr>`;
+
+    datos = cache.inventario.map(i => {
+      const p = byId(cache.productos, 'idProducto', i.idProducto);
+      const cat = byId(cache.categorias, 'idCategoria', p?.idCategoria);
+      return { p, i, cat };
+    }).filter(x => x.p);
+
+    htmlBody = datos.map(({ p, i, cat }) => `
+      <tr>
+        <td>${esc(p.nombre)}</td>
+        <td>${esc(p.sku || '—')}</td>
+        <td>${esc(cat?.nombre || '—')}</td>
+        <td><strong>${esc(i.cantidadActual)}</strong></td>
+        <td>${esc(p.stockMinimo ?? 0)}</td>
+        <td><span class="badge ${p.estado === 'Activo' ? 'badge-success' : 'badge-danger'}">${esc(p.estado)}</span></td>
+      </tr>`).join('');
+  }
+
+  else if (tipo === 'stock-bajo') {
+    titulo.textContent = 'Productos con stock bajo';
+    htmlHead = `<tr>
+      <th>Producto</th><th>Categoría</th>
+      <th>Stock actual</th><th>Mínimo</th><th>Faltante</th>
+    </tr>`;
+
+    datos = cache.inventario.filter(i => {
+      const p = byId(cache.productos, 'idProducto', i.idProducto);
+      return p && Number(i.cantidadActual) <= Number(p.stockMinimo || 0);
+    });
+
+    htmlBody = datos.map(i => {
+      const p = byId(cache.productos, 'idProducto', i.idProducto);
+      const cat = byId(cache.categorias, 'idCategoria', p?.idCategoria);
+      const faltante = (p.stockMinimo || 0) - (i.cantidadActual || 0);
+      return `<tr>
+        <td>${esc(p.nombre)}</td>
+        <td>${esc(cat?.nombre || '—')}</td>
+        <td>${esc(i.cantidadActual)}</td>
+        <td>${esc(p.stockMinimo)}</td>
+        <td><span class="badge badge-danger">${faltante}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Puedes seguir agregando los demás reportes (movimientos, pedidos, clientes)...
+
+  thead.innerHTML = htmlHead;
+  tbody.innerHTML = htmlBody || `<tr><td colspan="10" style="text-align:center">No hay datos</td></tr>`;
+  total.textContent = `${datos.length} registro(s)`;
+}
+
+function exportarExcel() {
+  alert('Función de exportar a Excel (la implementamos después)');
 }
 
 // ==================== CLIENTES ====================
@@ -598,15 +688,15 @@ async function renderClientes() {
   const filtroCat = document.getElementById('filtroCategoria')?.value || '';
 
   const lista = cache.clientes.filter(c => {
-  const idFormateado = String(c.idCliente).padStart(4, '0');   // ← 0001, 0002...
-  
-  const coincideTexto = (
-    `${c.idCliente || ''} ${idFormateado} ${c.nombre || ''} ${c.negocio || ''} ${c.correo || ''}`
-  ).toLowerCase().includes(texto);
+    const idFormateado = String(c.idCliente).padStart(4, '0');   // ← 0001, 0002...
 
-  const coincideCat = !filtroCat || String(c.categoria) === String(filtroCat);
-  return coincideTexto && coincideCat;
-});
+    const coincideTexto = (
+      `${c.idCliente || ''} ${idFormateado} ${c.nombre || ''} ${c.negocio || ''} ${c.correo || ''}`
+    ).toLowerCase().includes(texto);
+
+    const coincideCat = !filtroCat || String(c.categoria) === String(filtroCat);
+    return coincideTexto && coincideCat;
+  });
 
   const tbody = document.getElementById('tablaclientes');
   if (!tbody) return;
@@ -630,11 +720,11 @@ async function renderClientes() {
       <td>${esc(c.telefono || '')}</td>
       <td>${esc(c.direccion || '')}</td>
       <td>
-        ${c.categoria == 1 
-          ? '<span style="color:#2563eb; font-weight:600;">Mayorista</span>' 
-          : c.categoria == 2 
-            ? '<span style="color:#059669; font-weight:600;">Menudista</span>' 
-            : '—'}
+        ${c.categoria == 1
+      ? '<span style="color:#2563eb; font-weight:600;">Mayorista</span>'
+      : c.categoria == 2
+        ? '<span style="color:#059669; font-weight:600;">Menudista</span>'
+        : '—'}
       </td>
     </tr>
   `).join('');
@@ -648,19 +738,19 @@ function abrirModalCliente(id = null) {
   if (id) {
     const c = byId(cache.clientes, 'idCliente', id);
     if (c) {
-      document.getElementById('clienteNombre').value    = c.nombre || '';
-      document.getElementById('clienteNegocio').value   = c.negocio || '';
-      document.getElementById('clienteCorreo').value    = c.correo || '';
-      document.getElementById('clienteTelefono').value  = c.telefono || '';
+      document.getElementById('clienteNombre').value = c.nombre || '';
+      document.getElementById('clienteNegocio').value = c.negocio || '';
+      document.getElementById('clienteCorreo').value = c.correo || '';
+      document.getElementById('clienteTelefono').value = c.telefono || '';
       document.getElementById('clienteDireccion').value = c.direccion || '';
       document.getElementById('clienteCategoria').value = c.categoria || '';
     }
   } else {
     // Limpiar formulario
-    document.getElementById('clienteNombre').value    = '';
-    document.getElementById('clienteNegocio').value   = '';
-    document.getElementById('clienteCorreo').value    = '';
-    document.getElementById('clienteTelefono').value  = '';
+    document.getElementById('clienteNombre').value = '';
+    document.getElementById('clienteNegocio').value = '';
+    document.getElementById('clienteCorreo').value = '';
+    document.getElementById('clienteTelefono').value = '';
     document.getElementById('clienteDireccion').value = '';
     document.getElementById('clienteCategoria').value = '';
   }
@@ -672,14 +762,14 @@ async function guardarCliente() {
   const id = document.getElementById('clienteId').value;
 
   const datos = {
-    nombre:    document.getElementById('clienteNombre').value.trim(),
-    negocio:   document.getElementById('clienteNegocio').value.trim() || null,
-    correo:    document.getElementById('clienteCorreo').value.trim() || null,
-    telefono:  document.getElementById('clienteTelefono').value.trim() || null,
+    nombre: document.getElementById('clienteNombre').value.trim(),
+    negocio: document.getElementById('clienteNegocio').value.trim() || null,
+    correo: document.getElementById('clienteCorreo').value.trim() || null,
+    telefono: document.getElementById('clienteTelefono').value.trim() || null,
     direccion: document.getElementById('clienteDireccion').value.trim() || null,
-    categoria: document.getElementById('clienteCategoria').value 
-                 ? Number(document.getElementById('clienteCategoria').value) 
-                 : null
+    categoria: document.getElementById('clienteCategoria').value
+      ? Number(document.getElementById('clienteCategoria').value)
+      : null
   };
 
   if (!datos.nombre) {
@@ -714,10 +804,10 @@ async function enviarMensaje() {
   const box = document.getElementById('chatMessages');
   box.innerHTML += `<div class="message user">${esc(texto)}</div>`;
   input.value = '';
-  
+
   const q = texto.toLowerCase();
   let respuesta = 'No entendí la consulta. Prueba con: stock bajo, existencias, pedidos pendientes o reabastecimiento.';
-  
+
   try {
     if (q.includes('stock bajo') || q.includes('reabaste')) {
       const bajo = cache.inventario.filter(i => {
@@ -726,9 +816,9 @@ async function enviarMensaje() {
       });
       respuesta = bajo.length
         ? 'Productos con stock bajo: ' + bajo.map(i => {
-            const p = byId(cache.productos, 'idProducto', i.idProducto);
-            return `${p?.nombre} (${i.cantidadActual} unidades)`;
-          }).join(', ')
+          const p = byId(cache.productos, 'idProducto', i.idProducto);
+          return `${p?.nombre} (${i.cantidadActual} unidades)`;
+        }).join(', ')
         : 'No hay productos con stock bajo.';
     } else if (q.includes('existencias') || q.includes('stock de')) {
       respuesta = 'Existencias actuales:\n' + cache.inventario.map(i => {
@@ -736,16 +826,16 @@ async function enviarMensaje() {
         return `• ${p?.nombre || 'Producto'}: ${i.cantidadActual} (${i.ubicacion})`;
       }).join('\n');
     } else if (q.includes('pedido')) {
-      const pendientes = cache.pedidos.filter(p => ['Pendiente','En preparación'].includes(p.estado));
+      const pendientes = cache.pedidos.filter(p => ['Pendiente', 'En preparación'].includes(p.estado));
       respuesta = pendientes.length
         ? `Hay ${pendientes.length} pedido(s) pendientes/en preparación.`
         : 'No hay pedidos pendientes.';
     }
-  } catch(e) {
+  } catch (e) {
     respuesta = 'Error al consultar los datos.';
   }
-  
-  box.innerHTML += `<div class="message bot">${esc(respuesta).replace(/\n/g,'<br>')}</div>`;
+
+  box.innerHTML += `<div class="message bot">${esc(respuesta).replace(/\n/g, '<br>')}</div>`;
   box.scrollTop = box.scrollHeight;
 }
 
@@ -759,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('searchProductos')?.addEventListener('input', () => renderProductos().catch(showError));
   document.getElementById('searchCliente')?.addEventListener('input', () => renderClientes().catch(showError));
   document.getElementById('filtroCategoria')?.addEventListener('change', () => renderClientes().catch(showError));
-  
+
   // Restaurar sesión si existe
   const guardado = localStorage.getItem('usuario');
   if (guardado) {
@@ -769,6 +859,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('app').style.display = 'block';
       pintarUsuario();
       cargarDatos().then(() => mostrarPagina('dashboard'));
-    } catch {}
+    } catch { }
   }
 });

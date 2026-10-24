@@ -209,6 +209,100 @@ body {
   color: #94a3b8;
 }
 
+/* ===== SIDEBAR COLAPSABLE ===== */
+.btn-toggle {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.3rem;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.sidebar .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 1.2rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 1rem;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-link {
+  color: #94a3b8;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: white;
+}
+
+.nav-text {
+  white-space: nowrap;
+}
+
+/* Estado colapsado */
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .logout-text {
+  display: none;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 0.9rem 0;
+}
+
+.sidebar.collapsed .btn-toggle {
+  margin-left: 0;
+}
+
+.sidebar.collapsed + .main-content,
+.sidebar.collapsed ~ .main-content {
+  margin-left: 80px;
+}
+
+/* Ajuste del contenido principal */
+.main-content {
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar {
+  transition: width 0.3s ease;
+}
+
+/* Iconos del menú */
+.nav-icon {
+  font-size: 1.25rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-text {
+  white-space: nowrap;
+}
+
 .nav-menu {
   list-style: none;
   flex: 1;
@@ -434,6 +528,16 @@ tr:hover td {
 .badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
 .badge-danger { background: rgba(220, 38, 38, 0.15); color: var(--danger); }
 .badge-info { background: rgba(37, 99, 235, 0.15); color: var(--primary); }
+
+/* Iconos de las tarjetas del Dashboard */
+.card-icon i {
+  font-size: 1.5rem;
+}
+
+/* Icono de Cerrar sesión */
+.btn-logout i {
+  font-size: 1rem;
+}
 
 /* ========== CHAT IA ========== */
 .chat-container {
