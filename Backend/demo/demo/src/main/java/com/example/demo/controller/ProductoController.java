@@ -52,8 +52,11 @@ public class ProductoController {
         existente.setIdCategoria(datos.getIdCategoria() != null ? datos.getIdCategoria() : existente.getIdCategoria());
         existente.setSku(datos.getSku() != null ? datos.getSku() : existente.getSku());
         existente.setNombre(datos.getNombre() != null ? datos.getNombre() : existente.getNombre());
+        existente.setMarca(datos.getMarca() != null ? datos.getMarca() : existente.getMarca());
         existente.setDescripcion(datos.getDescripcion() != null ? datos.getDescripcion() : existente.getDescripcion());
         existente.setPrecioUnitario(datos.getPrecioUnitario() != null ? datos.getPrecioUnitario() : existente.getPrecioUnitario());
+        existente.setPrecioMayoreo(datos.getPrecioMayoreo() != null ? datos.getPrecioMayoreo() : existente.getPrecioMayoreo());
+        existente.setUrlImagen(datos.getUrlImagen() != null ? datos.getUrlImagen() : existente.getUrlImagen());
         existente.setStockMinimo(datos.getStockMinimo() != null ? datos.getStockMinimo() : existente.getStockMinimo());
         // ✅ Agregado: actualizar stock actual
         existente.setStockActual(datos.getStockActual() != null ? datos.getStockActual() : existente.getStockActual());

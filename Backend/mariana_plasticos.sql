@@ -1,267 +1,259 @@
--- ==================================================
--- COPIA COMPLETA: mariana_plasticos
--- ESTRUCTURA + TODOS LOS REGISTROS
--- ==================================================
-
--- Crear base de datos
-CREATE DATABASE IF NOT EXISTS mariana_plasticos;
+-- Crear base de datos si no existe
+CREATE DATABASE IF NOT EXISTS mariana_plasticos
+DEFAULT CHARACTER SET utf8mb4
+DEFAULT COLLATE utf8mb4_unicode_ci;
 USE mariana_plasticos;
-DROP DATABASE IF EXISTS mariana_plasticos;
-CREATE DATABASE mariana_plasticos;
-USE mariana_plasticos;
--- ==================================================
--- CREAR TABLAS
--- ==================================================
 
--- 1. Roles
-CREATE TABLE IF NOT EXISTS Roles (
-  id_rol INT AUTO_INCREMENT PRIMARY KEY,
-  nombre_rol VARCHAR(50) NOT NULL,
-  descripcion VARCHAR(255)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: categorias
+-- =============================================
+CREATE TABLE IF NOT EXISTS categorias (
+    id_categoria TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    descripcion TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Usuarios
-CREATE TABLE IF NOT EXISTS Usuarios (
-  id_usuario INT AUTO_INCREMENT PRIMARY KEY,
-  id_rol INT NOT NULL,
-  nombre VARCHAR(100) NOT NULL,
-  correo VARCHAR(100),
-  contrasena VARCHAR(255),
-  estado VARCHAR(20),
-  FOREIGN KEY (id_rol) REFERENCES Roles(id_rol)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: roles
+-- =============================================
+CREATE TABLE IF NOT EXISTS roles (
+    id_rol TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre_rol VARCHAR(30) NOT NULL UNIQUE,
+    descripcion TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. Categoría
-CREATE TABLE IF NOT EXISTS Categoria (
-  id_categoria INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
-  descripcion VARCHAR(255)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: usuarios
+-- =============================================
+CREATE TABLE IF NOT EXISTS usuarios (
+    id_usuario INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_rol TINYINT UNSIGNED NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    correo VARCHAR(100) NOT NULL UNIQUE,
+    contrasena VARCHAR(255) NOT NULL,
+    estado ENUM('Activo','Inactivo') DEFAULT 'Activo',
+    FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Productos (con los 2 campos nuevos)
-CREATE TABLE IF NOT EXISTS Productos (
-  id_producto INT AUTO_INCREMENT PRIMARY KEY,
-  id_categoria INT NOT NULL,
-  sku VARCHAR(50),
-  nombre VARCHAR(100) NOT NULL,
-  descripcion TEXT,
-  precio_unitario DECIMAL(10,2),
-  stock_minimo INT,
-  url_imagen VARCHAR(500),
-  estado VARCHAR(20),
-  FOREIGN KEY (id_categoria) REFERENCES Categoria(id_categoria)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: productos — CORREGIDA con marca y precio_mayoreo
+-- =============================================
+CREATE TABLE IF NOT EXISTS productos (
+    id_producto INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_categoria TINYINT UNSIGNED NULL,
+    sku VARCHAR(30) NOT NULL UNIQUE,
+    nombre VARCHAR(150) NOT NULL,
+    marca VARCHAR(50) NOT NULL DEFAULT 'Géminis',
+    descripcion TEXT NULL,
+    precio_unitario DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+    precio_mayoreo DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+    stock_minimo INT UNSIGNED NOT NULL DEFAULT 10,
+    stock_actual INT UNSIGNED NOT NULL DEFAULT 0,
+    estado ENUM('Activo','Inactivo') DEFAULT 'Activo',
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Inventario
-CREATE TABLE IF NOT EXISTS Inventario (
-  id_inventario INT AUTO_INCREMENT PRIMARY KEY,
-  id_producto INT NOT NULL,
-  cantidad_actual INT,
-  ubicacion VARCHAR(255),
-  FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: estantes — NUEVA para punto 2
+-- =============================================
+CREATE TABLE IF NOT EXISTS estantes (
+    id_estante SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(20) NOT NULL UNIQUE COMMENT 'Ej: A-1, B-3, Pasillo 2 Estante 5',
+    descripcion VARCHAR(100) NULL,
+    ubicacion_general VARCHAR(100) NOT NULL DEFAULT 'Almacén General'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. Movimientos
+-- =============================================
+-- TABLA: inventario — MODIFICADA con estante
+-- =============================================
+CREATE TABLE IF NOT EXISTS inventario (
+    id_inventario INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_producto INT UNSIGNED NOT NULL,
+    cantidad_actual INT UNSIGNED NOT NULL DEFAULT 0,
+    id_estante SMALLINT UNSIGNED NULL,
+    ubicacion_texto VARCHAR(100) NULL COMMENT 'Ubicación libre si no usa estante',
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE,
+    FOREIGN KEY (id_estante) REFERENCES estantes(id_estante)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- TABLA: clientes
+-- =============================================
+CREATE TABLE IF NOT EXISTS clientes (
+    id_cliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    negocio VARCHAR(100) NULL,
+    correo VARCHAR(100) NULL,
+    telefono VARCHAR(20) NULL,
+    direccion TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- TABLA: pedidos
+-- =============================================
+CREATE TABLE IF NOT EXISTS pedidos (
+    id_pedido INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT UNSIGNED NOT NULL,
+    fecha_pedido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('Pendiente','Confirmado','Enviado','Completado','Cancelado') DEFAULT 'Pendiente',
+    total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    observaciones TEXT NULL,
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- TABLA: detalles_pedido
+-- =============================================
+CREATE TABLE IF NOT EXISTS detalles_pedido (
+    id_detalle_pedido INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_pedido INT UNSIGNED NOT NULL,
+    id_producto INT UNSIGNED NOT NULL,
+    cantidad SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    precio_unitario DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+    subtotal DECIMAL(10,2) GENERATED ALWAYS AS (cantidad * precio_unitario) STORED,
+    FOREIGN KEY (id_pedido) REFERENCES pedidos(id_pedido) ON DELETE CASCADE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- TABLA: movimientos
+-- =============================================
 CREATE TABLE IF NOT EXISTS movimientos (
-  id_movimiento INT AUTO_INCREMENT PRIMARY KEY,
-  id_usuario INT NOT NULL,
-  tipo_movimiento VARCHAR(50),
-  fecha_movimiento DATETIME,
-  observaciones TEXT,
-  FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    id_movimiento INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT UNSIGNED NOT NULL,
+    tipo_movimiento ENUM('Entrada','Salida','Ajuste','Venta') NOT NULL,
+    fecha_movimiento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    observaciones TEXT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Detalles_Movimiento
-CREATE TABLE IF NOT EXISTS Detalles_Movimiento (
-  id_detalle INT AUTO_INCREMENT PRIMARY KEY,
-  id_movimiento INT NOT NULL,
-  id_producto INT NOT NULL,
-  cantidad INT,
-  precio_unitario DECIMAL(10,2),
-  subtotal DECIMAL(10,2),
-  FOREIGN KEY (id_movimiento) REFERENCES movimientos(id_movimiento),
-  FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: detalles_movimiento
+-- =============================================
+CREATE TABLE IF NOT EXISTS detalles_movimiento (
+    id_detalle_mov INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_movimiento INT UNSIGNED NOT NULL,
+    id_producto INT UNSIGNED NOT NULL,
+    cantidad SMALLINT NOT NULL COMMENT 'Positivo=entrada, Negativo=salida',
+    precio_unitario DECIMAL(8,2) NULL,
+    FOREIGN KEY (id_movimiento) REFERENCES movimientos(id_movimiento) ON DELETE CASCADE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Cliente
-CREATE TABLE IF NOT EXISTS Cliente (
-  id_cliente INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
-  correo VARCHAR(100),
-  telefono VARCHAR(20),
-  direccion VARCHAR(255)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: envios
+-- =============================================
+CREATE TABLE IF NOT EXISTS envios (
+    id_envio INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_pedido INT UNSIGNED NOT NULL,
+    numero_guia VARCHAR(50) NULL,
+    estado_envio VARCHAR(50) DEFAULT 'Pendiente',
+    fecha_entrega DATE NULL,
+    rastreo_url VARCHAR(255) NULL,
+    FOREIGN KEY (id_pedido) REFERENCES pedidos(id_pedido)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. Pedidos
-CREATE TABLE IF NOT EXISTS Pedidos (
-  id_pedido INT AUTO_INCREMENT PRIMARY KEY,
-  id_cliente INT NOT NULL,
-  fecha_pedido DATETIME,
-  estado VARCHAR(50),
-  total DECIMAL(10,2),
-  observaciones TEXT,
-  FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: servicio_externo
+-- =============================================
+CREATE TABLE IF NOT EXISTS servicio_externo (
+    id_servicio TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre_servicio VARCHAR(100) NOT NULL,
+    descripcion TEXT NULL,
+    url_api VARCHAR(255) NULL,
+    estado ENUM('Activo','Inactivo') DEFAULT 'Activo'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 10. Detalles_pedido
-CREATE TABLE IF NOT EXISTS Detalles_pedido (
-  id_detalles_pedido INT AUTO_INCREMENT PRIMARY KEY,
-  id_pedido INT NOT NULL,
-  id_producto INT NOT NULL,
-  cantidad INT,
-  precio_unitario DECIMAL(10,2),
-  subtotal DECIMAL(10,2),
-  FOREIGN KEY (id_pedido) REFERENCES Pedidos(id_pedido),
-  FOREIGN KEY (id_producto) REFERENCES Productos(id_producto)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =============================================
+-- TABLA: asistente_ia
+-- =============================================
+CREATE TABLE IF NOT EXISTS asistente_ia (
+    id_asistente TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_servicio TINYINT UNSIGNED NULL,
+    descripcion TEXT NULL,
+    modelo_ia VARCHAR(100) NULL,
+    activo BOOLEAN DEFAULT TRUE,
+    endpoint_api VARCHAR(255) NULL,
+    FOREIGN KEY (id_servicio) REFERENCES servicio_externo(id_servicio)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 11. Envíos
-CREATE TABLE IF NOT EXISTS Envios (
-  id_envio INT AUTO_INCREMENT PRIMARY KEY,
-  id_pedido INT NOT NULL,
-  numero_guia VARCHAR(100),
-  estado_envio VARCHAR(50),
-  fecha_entrega DATE,
-  rastreo_url VARCHAR(500),
-  FOREIGN KEY (id_pedido) REFERENCES Pedidos(id_pedido)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 12. Servicio_Externo
-CREATE TABLE IF NOT EXISTS Servicio_Externo (
-  id_servicio INT AUTO_INCREMENT PRIMARY KEY,
-  nombre_servicio VARCHAR(100),
-  descripcion TEXT,
-  url_api VARCHAR(500),
-  estado VARCHAR(20)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 13. asistente_IA
-CREATE TABLE IF NOT EXISTS asistente_IA (
-  id_asistente INT AUTO_INCREMENT PRIMARY KEY,
-  id_servicio INT NOT NULL,
-  descripcion TEXT,
-  modelo_ia VARCHAR(100),
-  activo BOOLEAN,
-  endpoint_api VARCHAR(500),
-  FOREIGN KEY (id_servicio) REFERENCES Servicio_Externo(id_servicio)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ==================================================
--- INSERTAR TODOS LOS DATOS
--- ==================================================
-
-START TRANSACTION;
-
--- 1. Roles
-INSERT INTO Roles (id_rol, nombre_rol, descripcion) VALUES
-(1, 'Administrador', 'Acceso completo al sistema'),
-(2, 'Empleado', 'Registro de productos y movimientos'),
-(3, 'Ventas', 'Gestión de clientes y pedidos');
-
--- 2. Usuarios (corregido)
-INSERT INTO Usuarios (id_usuario, id_rol, nombre, correo, contrasena, estado) VALUES
-(1, 1, 'Oswaldo Ortega', 'Oswaldo.admin@gmail.com', 'Oswaldo1234', 'Activo'),
-(2, 2, 'Humberto Juarez', 'humberto.gerente@gmail.com', 'HumbertoG123', 'Activo'),
-(3, 3, 'Armando Hernandez', 'Armando.ventasAlamacen@gmail.com', 'Armando234', 'Activo');
-
--- 3. Categorías
-INSERT INTO Categoria (id_categoria, nombre, descripcion) VALUES
+-- Categorías
+INSERT INTO categorias (id_categoria, nombre, descripcion) VALUES
 (1, 'Envases', 'Envases y recipientes de plástico'),
 (2, 'Bolsas', 'Bolsas de plástico de distintos tamaños'),
-(3, 'Desechables', 'Productos desechables de plástico');
+(3, 'Desechables', 'Productos desechables de plástico'),
+(4, 'Accesorios', 'Accesorios y complementos para productos desechables');
 
--- 4. Productos
-INSERT INTO Productos
-(id_producto, id_categoria, sku, nombre, descripcion, precio_unitario, stock_minimo, url_imagen, estado)
-VALUES
-(1, 1, 'ENV-001', 'Botella PET 1 litro', 'Botella transparente de PET de 1 litro', 4.50, 20, NULL, 'Activo'),
-(2, 2, 'BOL-001', 'Bolsa mediana', 'Bolsa de plástico mediana', 1.20, 50, NULL, 'Activo'),
-(3, 3, 'DES-001', 'Vaso plástico 500 ml', 'Vaso desechable de 500 ml', 2.00, 30, NULL, 'Activo'),
-(4, 1, 'ENV-002', 'Envase con tapa 750 ml', 'Envase plástico con tapa', 6.75, 15, NULL, 'Activo');
+-- Roles
+INSERT INTO roles (id_rol, nombre_rol, descripcion) VALUES
+(1, 'Administrador', 'Acceso completo al sistema'),
+(2, 'Gerente', 'Registro de productos y movimientos'),
+(3, 'Subgerente', 'Gestión de clientes y pedidos');
 
--- 5. Inventario
-INSERT INTO Inventario (id_inventario, id_producto, cantidad_actual, ubicacion) VALUES
-(1, 1, 100, 'Almacén A - Estante 1'),
-(2, 2, 250, 'Almacén A - Estante 2'),
-(3, 3, 120, 'Almacén B - Estante 1'),
-(4, 4, 60, 'Almacén B - Estante 2');
+-- Usuarios
+INSERT INTO usuarios (id_usuario, id_rol, nombre, correo, contrasena, estado) VALUES
+(1, 1, 'Oswaldo Ortega', 'oswaldo.admin@gmail.com', 'Oswaldo1234', 'Activo'),
+(2, 2, 'Humberto Juárez', 'humberto.gerente@gmail.com', 'HumbertoG123', 'Activo'),
+(3, 3, 'Armando Hernández', 'armando.ventasAlmacen@gmail.com', 'Armando234', 'Activo');
 
--- 6. Movimientos
-INSERT INTO movimientos
-(id_movimiento, id_usuario, tipo_movimiento, fecha_movimiento, observaciones)
-VALUES
-(1, 2, 'Entrada', '2026-10-10 09:00:00', 'Recepción de mercancía del proveedor'),
-(2, 2, 'Salida', '2026-10-11 11:30:00', 'Salida por venta de productos'),
-(3, 1, 'Entrada', '2026-10-12 14:15:00', 'Ajuste de inventario');
+-- Estantes (ejemplos para punto 2)
+INSERT INTO estantes (codigo, descripcion, ubicacion_general) VALUES
+('A-1', 'Pasillo A, Estante 1 — Botellas', 'Almacén General'),
+('A-2', 'Pasillo A, Estante 2 — Envases', 'Almacén General'),
+('B-1', 'Pasillo B, Estante 1 — Bolsas', 'Almacén General'),
+('B-2', 'Pasillo B, Estante 2 — Desechables', 'Almacén General'),
+('C-1', 'Pasillo C, Estante 1 — Accesorios', 'Almacén General');
 
--- 7. Detalles de movimiento
-INSERT INTO Detalles_Movimiento
-(id_detalle, id_movimiento, id_producto, cantidad, precio_unitario, subtotal)
-VALUES
-(1, 1, 1, 20, 4.50, 90.00),
-(2, 1, 3, 10, 2.00, 20.00),
-(3, 2, 2, 15, 1.20, 18.00),
-(4, 3, 4, 5, 6.75, 33.75);
+-- Clientes
+INSERT INTO clientes (id_cliente, nombre, negocio, correo, telefono, direccion) VALUES
+(1, 'Carmelo López Ortiz', 'Comercial La Central', 'carmelo.lopez.ortiz@gmail.com', '7221234567', 'Toluca, Estado de México'),
+(2, 'Paola de Jesús Méndez', 'Papelería El Sol', 'paola.dejesus.mendez@gmail.com', '7229876543', 'Metepec, Estado de México'),
+(3, 'Doricela del Valle Morales', 'Distribuidora del Valle', 'doricela.delvalle.morales@gmail.com', '7295551234', 'Lerma, Estado de México');
 
--- 8. Clientes
-INSERT INTO Cliente (id_cliente, nombre, correo, telefono, direccion) VALUES
-(1, 'Comercial La Central', 'compras@central.ejemplo.com', '7221234567', 'Toluca, Estado de México'),
-(2, 'Papelería El Sol', 'pedidos@elsol.ejemplo.com', '7229876543', 'Metepec, Estado de México'),
-(3, 'Distribuidora del Valle', 'contacto@valle.ejemplo.com', '7295551234', 'Lerma, Estado de México');
-
--- 9. Pedidos
-INSERT INTO Pedidos
-(id_pedido, id_cliente, fecha_pedido, estado, total, observaciones)
-VALUES
-(1, 1, '2026-10-13 10:00:00', 'En preparación', 114.00, 'Pedido de prueba con dos productos'),
-(2, 2, '2026-10-14 12:30:00', 'Pendiente', 60.00, 'Pedido pendiente de surtir'),
-(3, 3, '2026-10-15 09:45:00', 'Enviado', 67.50, 'Pedido preparado para envío');
-
--- 10. Detalles de pedido
-INSERT INTO Detalles_pedido
-(id_detalles_pedido, id_pedido, id_producto, cantidad, precio_unitario, subtotal)
-VALUES
-(1, 1, 1, 20, 4.50, 90.00),
-(2, 1, 3, 12, 2.00, 24.00),
-(3, 2, 2, 50, 1.20, 60.00),
-(4, 3, 4, 10, 6.75, 67.50);
-
--- 11. Envíos
-INSERT INTO Envios
-(id_envio, id_pedido, numero_guia, estado_envio, fecha_entrega, rastreo_url)
-VALUES
-(1, 1, 'MP-TEST-0001', 'En tránsito', NULL, 'https://rastreo.ejemplo.com/MP-TEST-0001'),
-(2, 3, 'MP-TEST-0003', 'Entregado', '2026-10-16', 'https://rastreo.ejemplo.com/MP-TEST-0003');
-
--- 12. Servicios externos
-INSERT INTO Servicio_Externo
-(id_servicio, nombre_servicio, descripcion, url_api, estado)
-VALUES
-(1, 'Servicio de rastreo', 'Servicio ficticio para probar el seguimiento de envíos', 'https://api.ejemplo.com/rastreo', 'Activo'),
+-- Servicios externos
+INSERT INTO servicio_externo (id_servicio, nombre_servicio, descripcion, url_api, estado) VALUES
+(1, 'Servicio de rastreo', 'Servicio ficticio para seguimiento de envíos', 'https://api.ejemplo.com/rastreo', 'Activo'),
 (2, 'Servicio de notificaciones', 'Servicio ficticio para notificaciones del sistema', 'https://api.ejemplo.com/notificaciones', 'Activo');
 
--- 13. Asistente IA
-INSERT INTO asistente_IA
-(id_asistente, id_servicio, descripcion, modelo_ia, activo, endpoint_api)
-VALUES
-(1, 2, 'Asistente de prueba para responder preguntas frecuentes', 'modelo-demo', TRUE, 'https://api.ejemplo.com/ia/asistente'),
-(2, 1, 'Asistente de prueba para consultar el estado de envíos', 'modelo-demo', FALSE, 'https://api.ejemplo.com/ia/envios');
+-- Asistente IA
+INSERT INTO asistente_ia (id_servicio, descripcion, modelo_ia, activo, endpoint_api) VALUES
+(1, 'Asistente de preguntas frecuentes', 'modelo-demo', true, 'https://api.ejemplo.com/ia/asistente'),
+(1, 'Asistente de estado de envíos', 'modelo-demo', false, 'https://api.ejemplo.com/ia/envios');
 
-COMMIT;
+INSERT INTO productos (id_producto, id_categoria, sku, nombre, marca, descripcion, precio_unitario, precio_mayoreo, stock_minimo, stock_actual, estado) VALUES
+-- ENVASES
+(17, 1, 'GEM-ENV-001', 'Botella PET 500 ml transparente', 'Geminis', 'Grado alimenticio, tapa incluida', 2.80, 2.52, 10, 100, 'Activo'),
+(18, 1, 'GEM-ENV-002', 'Botella PET 1 litro transparente', 'Geminis', 'Cuello estándar, ideal jugos y agua', 4.20, 3.78, 10, 50, 'Activo'),
+(19, 1, 'GEM-ENV-003', 'Botella PET 1.5 litros', 'Geminis', 'Alta resistencia', 5.50, 4.95, 10, 40, 'Activo'),
+(20, 1, 'GEM-ENV-004', 'Botella PET 2 litros', 'Geminis', 'Formato familiar', 6.80, 6.12, 10, 30, 'Activo'),
+(21, 1, 'GEM-ENV-005', 'Botella PET 3 litros', 'Geminis', 'Retornable / mayor calibre', 9.50, 8.55, 10, 20, 'Activo'),
+(22, 1, 'GEM-ENV-006', 'Botella PET 350 ml (mini)', 'Geminis', 'Porción individual', 2.20, 1.98, 10, 120, 'Activo'),
+(23, 1, 'GEM-ENV-007', 'Envase con tapa 250 ml (deli)', 'Geminis', 'Redondo PP, microondas', 2.40, 2.16, 10, 120, 'Activo'),
+(24, 1, 'GEM-ENV-008', 'Envase con tapa 500 ml (deli)', 'Geminis', 'Redondo PP, hermético', 3.60, 3.24, 10, 100, 'Activo'),
+(25, 1, 'GEM-ENV-009', 'Envase con tapa 750 ml', 'Geminis', 'Rectangular, tapa segura', 5.20, 4.68, 10, 50, 'Activo'),
+(26, 1, 'GEM-ENV-010', 'Envase con tapa 1 litro', 'Geminis', 'Ideal ensaladas y guisados', 6.50, 5.85, 10, 40, 'Activo'),
+(27, 1, 'GEM-ENV-011', 'Envase almeja PET 500 ml', 'Geminis', 'Bisagra, transparente', 3.40, 3.06, 10, 10, 'Activo'),
+(28, 1, 'GEM-ENV-012', 'Envase almeja PET 750 ml', 'Geminis', 'Para comida para llevar', 4.80, 4.32, 10, 100, 'Activo'),
+(29, 1, 'GEM-ENV-013', 'Tarro PET 250 ml con tapa', 'Geminis', 'Rosca, salsas y cremas', 2.90, 2.61, 10, 100, 'Activo'),
+(30, 1, 'GEM-ENV-014', 'Tarro PET 500 ml con tapa', 'Geminis', 'Uso alimenticio / cosmético', 4.30, 3.87, 10, 60, 'Activo'),
+(31, 1, 'GEM-ENV-015', 'Garrafón PET 5 litros', 'Geminis', 'Con asa, grado alimenticio', 16.50, 14.85, 10, 1, 'Activo'),
+(32, 1, 'GEM-ENV-016', 'Garrafón PET 20 litros', 'Geminis', 'Retornable estándar', 42.00, 37.80, 10, 0, 'Activo'),
+(33, 1, 'GEM-ENV-017', 'Envase rectangular 250 ml', 'Geminis', 'Porciones individuales', 2.50, 2.25, 10, 200, 'Activo'),
+(34, 1, 'GEM-ENV-018', 'Envase cuadrado 1 litro con tapa', 'Geminis', 'Apilable', 6.20, 5.58, 10, 40, 'Activo'),
+(35, 1, 'GEM-ENV-019', 'Frasco PET 100 ml con tapa', 'Geminis', 'Muestras y porciones', 1.70, 1.53, 10, 200, 'Activo'),
+(36, 1, 'GEM-ENV-020', 'Envase redondo 2 litros con tapa', 'Geminis', 'Gran capacidad', 9.80, 8.82, 10, 24, 'Activo'),
+(37, 1, 'GEM-ENV-021', 'Botella PET 4 litros', 'Geminis', 'Botellón', 11.50, 10.35, 10, 16, 'Activo'),
+(38, 1, 'GEM-ENV-022', 'Envase con tapa 350 ml (deli)', 'Geminis', 'Tamaño intermedio', 3.10, 2.79, 10, 90, 'Activo'),
 
--- ==================================================
--- VERIFICAR QUE TODO ESTÁ CARGADO
--- ==================================================
-SELECT 'Roles' AS tabla, COUNT(*) AS registros FROM Roles
-UNION ALL SELECT 'Usuarios', COUNT(*) FROM Usuarios
-UNION ALL SELECT 'Categoria', COUNT(*) FROM Categoria
-UNION ALL SELECT 'Productos', COUNT(*) FROM Productos
-UNION ALL SELECT 'Inventario', COUNT(*) FROM Inventario
-UNION ALL SELECT 'movimientos', COUNT(*) FROM movimientos
-UNION ALL SELECT 'Detalles_Movimiento', COUNT(*) FROM Detalles_Movimiento
-UNION ALL SELECT 'Cliente', COUNT(*) FROM Cliente
-UNION ALL SELECT 'Pedidos', COUNT(*) FROM Pedidos
-UNION ALL SELECT 'Detalles_pedido', COUNT(*) FROM Detalles_pedido
-UNION ALL SELECT 'Envios', COUNT(*) FROM Envios
-UNION ALL SELECT 'Servicio_Externo', COUNT(*) FROM Servicio_Externo
-UNION ALL SELECT 'asistente_IA', COUNT(*) FROM asistente_IA;
+-- BOLSAS
+(39, 2, 'GEM-BOL-001', 'Bolsa camiseta chica 30x40 cm', 'Geminis', 'Alta densidad, natural', 0.32, 0.29, 10, 100, 'Activo'),
+(40, 2, 'GEM-BOL-002', 'Bolsa camiseta mediana 40x50 cm', 'Geminis', 'Alta densidad, natural', 0.48, 0.43, 10, 100, 'Activo'),
+(41, 2, 'GEM-BOL-003', 'Bolsa camiseta grande 50x60 cm', 'Geminis', 'Alta densidad, natural', 0.75, 0.68, 10, 100, 'Activo'),
+(42, 2, 'GEM-BOL-004', 'Bolsa camiseta reforzada mediana', 'Geminis', 'Mayor calibre', 0.65, 0.59, 10, 100, 'Activo'),
+(43, 2, 'GEM-BOL-005', 'Bolsa camiseta negra mediana', 'Geminis', 'Color negro', 0.52, 0.47, 10, 100, 'Activo'),
+(44, 2, 'GEM-BOL-006', 'Bolsa de basura 50x70 cm (paq. 20)', 'Geminis', 'Negra, calibre medio', 14.50, 13.05, 10, 20, 'Activo'),
+(45, 2, 'GEM-BOL-007', 'Bolsa de basura 60x90 cm (paq. 10)', 'Geminis', 'Negra, uso general', 12.80, 11.52, 10, 10, 'Activo'),
+(46, 2, 'GEM-BOL-008', 'Bolsa de basura 90x120 cm (paq. 10)', 'Geminis', 'Industrial, calibre alto', 21.50, 19.35, 10, 10, 'Activo'),
+(47, 2, 'GEM-BOL-009', 'Bolsa ziploc chica (caja 100)', 'Geminis', 'Cierre hermético', 19.50, 17.55, 10, 100, 'Activo'),
+(48, 2, 'GEM-BOL-010', 'Bolsa ziploc mediana (caja 100)', 'Geminis', 'Cierre hermético', 28.00, 25.20, 10, 100, 'Activo'),
+(49, 2, 'GEM-BOL-011', 'Bolsa ziploc grande (caja 100)', 'EcoDesechables', 'Cierre hermético', 38.00, 34.20, 10, 100, 'Activo');

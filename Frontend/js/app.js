@@ -160,8 +160,8 @@ async function renderProductos() {
 
   // Función para obtener el stock real desde Inventario
   const stockReal = (idProducto) => {
-    const inv = cache.inventario.find(i => Number(i.idProducto) === Number(idProducto));
-    return inv ? Number(inv.cantidadActual) : 0;
+    const ubicaciones = cache.inventario.filter(i => Number(i.idProducto) === Number(idProducto));
+    return ubicaciones.reduce((total, inv) => total + Number(inv.cantidadActual || 0), 0);
   };
 
   const lista = cache.productos.filter(p => {
@@ -176,16 +176,20 @@ async function renderProductos() {
       return `<tr>
           <td><strong>${esc(p.nombre)}</strong><br><small>${esc(p.sku || 'Sin SKU')}</small></td>
           <td>${esc(byId(cache.categorias, 'idCategoria', p.idCategoria)?.nombre || p.idCategoria || '—')}</td>
+          <td>${esc(p.marca || '—')}</td>
           <td>${money(p.precioUnitario)}</td>
+          <td>${money(p.precioMayoreo)}</td>
           <td><strong>${esc(stock)}</strong></td>
           <td><span class="badge ${p.estado === 'Activo' ? 'badge-success' : 'badge-danger'}">${esc(p.estado || '—')}</span></td>
           <td class="actions">
-            <button class="btn-icon" title="Editar" onclick="abrirModalProducto(${p.idProducto})">✏️</button>
-            <button class="btn-icon danger" title="Eliminar" onclick="eliminarProducto(${p.idProducto})">🗑️</button>
+            ${botonesAdmin(
+        `abrirModalProducto(${p.idProducto})`,
+        `eliminarProducto(${p.idProducto})`
+      )}
           </td>
         </tr>`;
     }).join('')
-    : '<tr><td colspan="6" style="text-align:center">No hay productos registrados</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center">No hay productos registrados</td></tr>';
 
   // Llenar select del modal
   const sel = document.getElementById('prodCategoria');
@@ -211,6 +215,8 @@ async function abrirModalProducto(id = null) {
   document.getElementById('prodSku').value = p?.sku || '';
   document.getElementById('prodNombre').value = p?.nombre || '';
   document.getElementById('prodDescripcion').value = p?.descripcion || '';
+  document.getElementById('prodMarca').value = p?.marca || '';
+  document.getElementById('prodPrecioMayoreo').value = p?.precioMayoreo ?? '';
   document.getElementById('prodPrecio').value = p?.precioUnitario ?? '';
   document.getElementById('prodStockMin').value = p?.stockMinimo ?? 10;
   document.getElementById('prodEstado').value = p?.estado || 'Activo';
@@ -219,8 +225,8 @@ async function abrirModalProducto(id = null) {
   const stockActualEl = document.getElementById('prodStockActual');
   if (stockActualEl) {
     if (p) {
-      const inv = cache.inventario.find(i => Number(i.idProducto) === Number(p.idProducto));
-      stockActualEl.value = inv ? inv.cantidadActual : (p.stockActual ?? 0);
+      const ubicaciones = cache.inventario.filter(i => Number(i.idProducto) === Number(p.idProducto));
+      stockActualEl.value = ubicaciones.reduce((total, inv) => total + Number(inv.cantidadActual || 0), 0);
     } else {
       stockActualEl.value = 0;
     }
@@ -241,6 +247,8 @@ async function guardarProducto() {
     sku: document.getElementById('prodSku').value.trim(),
     nombre: document.getElementById('prodNombre').value.trim(),
     descripcion: document.getElementById('prodDescripcion').value.trim(),
+    marca: document.getElementById('prodMarca').value.trim(),
+    precioMayoreo: Number(document.getElementById('prodPrecioMayoreo').value || 0),
     precioUnitario: Number(document.getElementById('prodPrecio').value || 0),
     stockMinimo: Number(document.getElementById('prodStockMin').value || 10),
     stockActual: stockActual,
@@ -265,22 +273,14 @@ async function guardarProducto() {
       idProducto = creado.idProducto || creado.id;
     }
 
-    // ✅ Sincronizar con Inventario
-    const inventarios = await get('/inventario');
-    const invExistente = inventarios.find(i => Number(i.idProducto) === Number(idProducto));
-
-    if (invExistente) {
-      // Ya existe → actualizar cantidad
-      await put(`/inventario/${invExistente.idInventario}`, {
-        cantidadActual: stockActual,
-        ubicacion: invExistente.ubicacion || 'Almacén General'
-      });
-    } else {
-      // No existe → crear registro de inventario
+    // El stock de un producto existente no se modifica desde este formulario.
+    // Se administra mediante entradas, salidas y pedidos para conservar el historial.
+    // Al crear un producto sí se genera su primera ubicación de inventario.
+    if (!id) {
       await post('/inventario', {
         idProducto: Number(idProducto),
         cantidadActual: stockActual,
-        ubicacion: 'Almacén General'
+        ubicacion: 'Almacén General - Estante 1'
       });
     }
 
@@ -321,8 +321,10 @@ async function renderInventario() {
           <td>${esc(p?.stockMinimo ?? '—')}</td>
           <td><span class="badge ${bajo ? 'badge-danger' : 'badge-success'}">${bajo ? 'Stock bajo' : 'Normal'}</span></td>
           <td class="actions">
-            <button class="btn-icon" title="Editar" onclick="abrirModalInventario(${i.idInventario})">✏️</button>
-            <button class="btn-icon danger" title="Eliminar" onclick="eliminarInventario(${i.idInventario})">🗑️</button>
+            ${botonesAdmin(
+        `abrirModalInventario(${i.idInventario})`,
+        `eliminarInventario(${i.idInventario})`
+      )}
           </td>
         </tr>`;
     }).join('')
@@ -414,7 +416,9 @@ async function renderMovimientos() {
             <td>${esc(cant)}</td>
             <td>${esc(byId(usuarios, 'idUsuario', m.idUsuario)?.nombre || `Usuario #${m.idUsuario}`)}</td>
             <td>${esc(m.observaciones || '—')}</td>
-            <td><button class="btn-icon danger" title="Eliminar" onclick="eliminarMovimiento(${m.idMovimiento})">🗑️</button></td>
+            <td class="actions">
+              ${botonEliminarAdmin(`eliminarMovimiento(${m.idMovimiento})`)}
+            </td>
           </tr>`;
       }).join('')
     : '<tr><td colspan="7" style="text-align:center">No hay movimientos registrados</td></tr>';
@@ -509,86 +513,114 @@ async function renderPedidos() {
         <td><span class="badge">${esc(p.estado || '—')}</span></td>
         <td>${esc(p.observaciones || '—')}</td>
         <td class="actions">
-          <button class="btn-icon" title="Editar" onclick="abrirModalPedido(${p.idPedido})">✏️</button>
-          <button class="btn-icon danger" title="Eliminar" onclick="eliminarPedido(${p.idPedido})">🗑️</button>
-        </td>
+  <button class="btn-icon" title="Imprimir reporte del pedido" onclick="imprimirReportePedido(${p.idPedido})">🖨️</button>
+  ${botonEliminarAdmin(`eliminarPedido(${p.idPedido})`)}
+</td>
       </tr>`).join('')
     : '<tr><td colspan="7" style="text-align:center">No hay pedidos registrados</td></tr>';
 }
 
-async function abrirModalPedido(id = null) {
-  await cargarDatos();
-  const p = id ? byId(cache.pedidos, 'idPedido', id) : null;
-  document.getElementById('pedId').value = p?.idPedido || '';
-  document.getElementById('modalPedidoTitle').textContent = p ? 'Editar pedido' : 'Nuevo pedido';
+function opcionesProductosPedido() {
+  return `<option value="">Selecciona un producto</option>` + cache.productos
+    .map(x => `<option value="${x.idProducto}">${esc(x.nombre)} — ${money(x.precioUnitario)}</option>`).join('');
+}
 
+function agregarLineaPedido(idProducto = '', cantidad = 1) {
+  const contenedor = document.getElementById('pedLineas');
+  const fila = document.createElement('div');
+  fila.className = 'pedido-linea';
+  fila.innerHTML = `
+    <select class="ped-linea-producto" aria-label="Producto">${opcionesProductosPedido()}</select>
+    <input class="ped-linea-cantidad" type="number" min="1" step="1" value="${Number(cantidad) || 1}" aria-label="Cantidad">
+    <button type="button" class="btn-icon danger" title="Quitar producto" aria-label="Quitar producto">✕</button>`;
+  fila.querySelector('.ped-linea-producto').value = idProducto;
+  fila.querySelector('.ped-linea-producto').addEventListener('change', actualizarTotalPedidoVista);
+  fila.querySelector('.ped-linea-cantidad').addEventListener('input', actualizarTotalPedidoVista);
+  fila.querySelector('button').addEventListener('click', () => {
+    fila.remove();
+    if (!contenedor.children.length) agregarLineaPedido();
+    actualizarTotalPedidoVista();
+  });
+  contenedor.appendChild(fila);
+  actualizarTotalPedidoVista();
+}
+
+function actualizarTotalPedidoVista() {
+  const filas = [...document.querySelectorAll('#pedLineas .pedido-linea')];
+  const total = filas.reduce((suma, fila) => {
+    const producto = byId(cache.productos, 'idProducto', fila.querySelector('.ped-linea-producto').value);
+    const cantidad = Number(fila.querySelector('.ped-linea-cantidad').value) || 0;
+    return suma + (Number(producto?.precioUnitario) || 0) * cantidad;
+  }, 0);
+  document.getElementById('pedTotalVista').value = money(total);
+}
+
+async function abrirModalPedido() {
+  await cargarDatos();
+  document.getElementById('pedId').value = '';
+  document.getElementById('modalPedidoTitle').textContent = 'Nuevo pedido';
   document.getElementById('pedCliente').innerHTML = cache.clientes
     .map(c => `<option value="${c.idCliente}">${esc(c.nombre)}</option>`).join('');
-  document.getElementById('pedProducto').innerHTML = cache.productos
-    .map(x => `<option value="${x.idProducto}">${esc(x.nombre)}</option>`).join('');
-  document.getElementById('pedCantidad').value = 1;
-  document.getElementById('pedEstado').value = p?.estado || 'Pendiente';
-  document.getElementById('pedObservaciones').value = p?.observaciones || '';
-
-  if (p) {
-    document.getElementById('pedCliente').value = p.idCliente;
-    document.getElementById('pedProducto').disabled = true;
-    document.getElementById('pedCantidad').disabled = true;
-  } else {
-    document.getElementById('pedProducto').disabled = false;
-    document.getElementById('pedCantidad').disabled = false;
-  }
-
+  document.getElementById('pedEstado').value = 'Pendiente';
+  document.getElementById('pedObservaciones').value = '';
+  document.getElementById('pedLineas').innerHTML = '';
+  agregarLineaPedido();
   document.getElementById('modalPedido').classList.add('active');
 }
 
 async function guardarPedido() {
-  const id = document.getElementById('pedId').value;
   const cliente = Number(document.getElementById('pedCliente').value);
-  const producto = byId(cache.productos, 'idProducto', document.getElementById('pedProducto').value);
-  const cantidad = Number(document.getElementById('pedCantidad').value);
+  const filas = [...document.querySelectorAll('#pedLineas .pedido-linea')];
+  const productos = filas.map(fila => ({
+    idProducto: Number(fila.querySelector('.ped-linea-producto').value),
+    cantidad: Number(fila.querySelector('.ped-linea-cantidad').value)
+  }));
   const estado = document.getElementById('pedEstado').value;
-  const observaciones = document.getElementById('pedObservaciones').value.trim();  // ✅ Solo lo del usuario
+  const observaciones = document.getElementById('pedObservaciones').value.trim();
 
-  if (!id && (!cliente || !producto || !Number.isInteger(cantidad) || cantidad < 1)) {
-    alert('Selecciona cliente, producto y cantidad válida.');
-    return;
-  }
+  if (!cliente) return alert('Selecciona un cliente.');
+  if (!productos.length || productos.some(x => !x.idProducto || !Number.isInteger(x.cantidad) || x.cantidad < 1))
+    return alert('Selecciona un producto y una cantidad válida en cada renglón.');
+  if (new Set(productos.map(x => x.idProducto)).size !== productos.length)
+    return alert('No repitas productos. Modifica la cantidad en el renglón existente.');
 
   try {
-    if (id) {
-      const existente = byId(cache.pedidos, 'idPedido', id);
-      await put(`/pedidos/${id}`, {
-        estado,
-        total: existente?.total || 0,
-        observaciones
-      });
-    } else {
-      // ✅ Observaciones limpias
-      await post('/pedidos', {
-        idCliente: cliente,
-        estado,
-        total: Number(producto.precioUnitario || 0) * cantidad,
-        observaciones: observaciones || null
-      });
-    }
+    await post('/pedidos', { idCliente: cliente, estado, observaciones: observaciones || null, productos });
     cerrarModal('modalPedido');
     await cargarDatos();
     await renderPedidos();
     await renderDashboard();
-    alert('Pedido guardado correctamente.');
+    alert('Pedido con varios productos guardado correctamente.');
+  } catch (e) { showError(e); }
+}
+
+async function imprimirReportePedido(id) {
+  try {
+    const pedido = await get(`/pedidos/${id}`);
+    const detalles = await get(`/pedidos/${id}/detalles`);
+    const cliente = byId(cache.clientes, 'idCliente', pedido.idCliente);
+    const filas = detalles.map(d => {
+      const producto = byId(cache.productos, 'idProducto', d.idProducto);
+      return `<tr><td>${esc(producto?.sku || '—')}</td><td>${esc(producto?.nombre || `Producto #${d.idProducto}`)}</td><td>${d.cantidad}</td><td>${money(d.precioUnitario)}</td><td>${money(d.subtotal)}</td></tr>`;
+    }).join('');
+    const ventana = window.open('', '_blank');
+    if (!ventana) return alert('El navegador bloqueó la ventana. Permite las ventanas emergentes para imprimir.');
+    ventana.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Pedido #${pedido.idPedido} - Mariana Plásticos</title>
+      <style>body{font-family:Arial,sans-serif;color:#1f2937;margin:36px}h1{color:#245bd6;margin-bottom:4px}.muted{color:#64748b}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{padding:10px;border-bottom:1px solid #dbe2ea;text-align:left}th{background:#eaf1fb}.total{text-align:right;font-size:20px;font-weight:bold;margin-top:22px}.datos{display:flex;justify-content:space-between;gap:20px;margin-top:24px}.notas{margin-top:22px}@media print{button{display:none}}</style></head><body>
+      <h1>Mariana Plásticos</h1><div class="muted">Reporte de pedido</div><div class="datos"><div><b>Pedido:</b> #${pedido.idPedido}<br><b>Cliente:</b> ${esc(cliente?.nombre || `Cliente #${pedido.idCliente}`)}<br><b>Negocio:</b> ${esc(cliente?.negocio || '—')}</div><div><b>Fecha:</b> ${esc(date(pedido.fechaPedido))}<br><b>Estado:</b> ${esc(pedido.estado || '—')}</div></div>
+      <table><thead><tr><th>SKU</th><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead><tbody>${filas}</tbody></table>
+      <div class="total">Total: ${money(pedido.total)}</div><div class="notas"><b>Observaciones:</b> ${esc(pedido.observaciones || 'Sin observaciones')}</div><p class="muted" style="margin-top:48px">Mariana Plásticos · Sistema de Inventario</p><script>window.onload=()=>window.print();</script></body></html>`);
+    ventana.document.close();
   } catch (e) { showError(e); }
 }
 
 async function eliminarPedido(id) {
-  if (!confirm('¿Eliminar este pedido?\nSi tiene detalles relacionados, la base de datos puede impedirlo.')) return;
+  if (!confirm('¿Eliminar este pedido y sus detalles?')) return;
   try {
     await del(`/pedidos/${id}`);
     await renderPedidos();
     await renderDashboard();
-  } catch (e) {
-    alert('No se pudo eliminar el pedido.\nProbablemente tiene detalles asociados.');
-  }
+  } catch (e) { showError(e); }
 }
 
 function cambiarFiltrosReporte() {
@@ -675,6 +707,112 @@ function exportarExcel() {
   alert('Función de exportar a Excel (la implementamos después)');
 }
 
+async function generarReporteDelDia() {
+  await cargarDatos();
+
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1);
+
+  // Filtrar solo lo de hoy
+  const movimientosHoy = (cache.movimientos || []).filter(m => {
+    const f = new Date(m.fechaMovimiento);
+    return f >= inicio && f < fin;
+  });
+
+  const pedidosHoy = (cache.pedidos || []).filter(p => {
+    const f = new Date(p.fechaPedido);
+    return f >= inicio && f < fin;
+  });
+
+  // Filas de movimientos
+  const filasMov = movimientosHoy.map(m => {
+    const p = byId(cache.productos, 'idProducto', m.idProducto);
+    return `<tr>
+      <td>${date(m.fechaMovimiento)}</td>
+      <td>${esc(m.tipoMovimiento || '—')}</td>
+      <td>${esc(p?.nombre || '—')}</td>
+      <td>${m.cantidad ?? '—'}</td>
+      <td>${esc(m.observaciones || '—')}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center">Sin movimientos hoy</td></tr>';
+
+  // Filas de pedidos
+  const filasPed = pedidosHoy.map(p => {
+    const c = byId(cache.clientes, 'idCliente', p.idCliente);
+    return `<tr>
+      <td>#${p.idPedido}</td>
+      <td>${esc(c?.nombre || '—')}</td>
+      <td>${date(p.fechaPedido)}</td>
+      <td>${money(p.total)}</td>
+      <td>${esc(p.estado || '—')}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center">Sin pedidos hoy</td></tr>';
+
+  const ventana = window.open('', '_blank');
+  if (!ventana) {
+    alert('El navegador bloqueó la ventana. Permite las ventanas emergentes para imprimir el reporte.');
+    return;
+  }
+
+  ventana.document.write(`<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Reporte del día - Mariana Plásticos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #1f2937; }
+    h1 { color: #245bd6; margin-bottom: 4px; }
+    h2 { margin-top: 32px; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; }
+    .muted { color: #64748b; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; }
+    th { background: #eaf1fb; }
+    @media print { button { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>Mariana Plásticos</h1>
+  <div class="muted">Reporte de actividad del día · ${hoy.toLocaleDateString('es-MX')}</div>
+
+  <h2>Movimientos del día (${movimientosHoy.length})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>${filasMov}</tbody>
+  </table>
+
+  <h2>Pedidos del día (${pedidosHoy.length})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Pedido</th>
+        <th>Cliente</th>
+        <th>Fecha</th>
+        <th>Total</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>${filasPed}</tbody>
+  </table>
+
+  <p class="muted" style="margin-top: 40px">
+    Generado el ${new Date().toLocaleString('es-MX')}
+  </p>
+
+  <script>window.onload = () => window.print();</script>
+</body>
+</html>`);
+  ventana.document.close();
+}
+
 // ==================== CLIENTES ====================
 async function renderClientes() {
   try {
@@ -726,6 +864,12 @@ async function renderClientes() {
         ? '<span style="color:#059669; font-weight:600;">Menudista</span>'
         : '—'}
       </td>
+      <td class="actions">
+  ${botonesAdmin(
+          `abrirModalCliente(${c.idCliente})`,
+          `eliminarCliente(${c.idCliente})`
+        )}
+</td>
     </tr>
   `).join('');
 }
@@ -862,3 +1006,72 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch { }
   }
 });
+
+// Estado de ordenamiento por tabla
+let sortState = {};
+
+/**
+ * Ordena las filas de una tabla al hacer clic en un encabezado.
+ * @param {string} tablaId  - id del <tbody> (ej: "tablaProductos")
+ * @param {number} colIndex - número de columna (empezando en 0)
+ */
+function ordenarTabla(tablaId, colIndex) {
+  const tbody = document.getElementById(tablaId);
+  if (!tbody) return;
+
+  const filas = Array.from(tbody.querySelectorAll('tr'));
+  if (filas.length === 0) return;
+
+  // Alternar dirección
+  const estado = sortState[tablaId] || { col: -1, dir: 'asc' };
+  const dir = (estado.col === colIndex && estado.dir === 'asc') ? 'desc' : 'asc';
+  sortState[tablaId] = { col: colIndex, dir };
+
+  filas.sort((a, b) => {
+    const celdaA = a.children[colIndex];
+    const celdaB = b.children[colIndex];
+    if (!celdaA || !celdaB) return 0;
+
+    let va = celdaA.textContent.trim().toLowerCase();
+    let vb = celdaB.textContent.trim().toLowerCase();
+
+    // Intentar ordenar como número si es posible
+    const na = parseFloat(va.replace(/[^0-9.-]/g, ''));
+    const nb = parseFloat(vb.replace(/[^0-9.-]/g, ''));
+
+    let cmp;
+    if (!isNaN(na) && !isNaN(nb) && va !== '' && vb !== '') {
+      cmp = na - nb;
+    } else {
+      cmp = va.localeCompare(vb, 'es', { sensitivity: 'base' });
+    }
+
+    return dir === 'asc' ? cmp : -cmp;
+  });
+
+  // Volver a insertar las filas ordenadas
+  filas.forEach(fila => tbody.appendChild(fila));
+}
+
+/** Devuelve true si el usuario actual es Administrador */
+function esAdmin() {
+  return usuarioActual?.idRol === 1;
+}
+
+/**
+ * Devuelve los botones de Editar y Eliminar solo si es Admin.
+ * Si no es admin, devuelve cadena vacía.
+ */
+function botonesAdmin(editarOnClick, eliminarOnClick) {
+  if (!esAdmin()) return '';
+  return `
+    <button class="btn-icon" title="Editar" onclick="${editarOnClick}">✏️</button>
+    <button class="btn-icon danger" title="Eliminar" onclick="${eliminarOnClick}">🗑️</button>
+  `;
+}
+
+/** Solo botón eliminar (para movimientos, pedidos, etc.) */
+function botonEliminarAdmin(eliminarOnClick) {
+  if (!esAdmin()) return '';
+  return `<button class="btn-icon danger" title="Eliminar" onclick="${eliminarOnClick}">🗑️</button>`;
+}

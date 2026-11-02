@@ -771,3 +771,10 @@ tr:hover td {
     width: 100%;
   }
 }
+
+/* Pedido con múltiples productos */
+
+.pedido-lineas { display: flex; flex-direction: column; gap: .65rem; }
+.pedido-linea { display: grid; grid-template-columns: minmax(0, 1fr) 105px 36px; gap: .5rem; align-items: center; }
+.pedido-linea select, .pedido-linea input { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #1f2937; }
+@media (max-width: 520px) { .pedido-linea { grid-template-columns: minmax(0, 1fr) 78px 32px; gap: .35rem; } }

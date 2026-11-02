@@ -21,14 +21,23 @@ public class Producto {
     @Column(name = "nombre", nullable = false, length = 100)
     private String nombre;
 
+    @Column(name = "marca", length = 100)
+    private String marca;
+
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
     @Column(name = "precio_unitario", precision = 10, scale = 2)
     private BigDecimal precioUnitario;
 
+    @Column(name = "precio_mayoreo", precision = 10, scale = 2)
+    private BigDecimal precioMayoreo;
+
     @Column(name = "stock_minimo")
     private Integer stockMinimo;
+
+    @Column(name = "url_imagen", length = 500)
+    private String urlImagen;
 
     // ✅ Agregado: stock real del producto
     @Column(name = "stock_actual")
@@ -66,11 +75,20 @@ public class Producto {
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
 
+    public String getMarca() { return marca; }
+    public void setMarca(String marca) { this.marca = marca; }
+
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
     public BigDecimal getPrecioUnitario() { return precioUnitario; }
     public void setPrecioUnitario(BigDecimal precioUnitario) { this.precioUnitario = precioUnitario; }
+
+    public BigDecimal getPrecioMayoreo() { return precioMayoreo; }
+    public void setPrecioMayoreo(BigDecimal precioMayoreo) { this.precioMayoreo = precioMayoreo; }
+
+    public String getUrlImagen() { return urlImagen; }
+    public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
 
     public Integer getStockMinimo() { return stockMinimo; }
     public void setStockMinimo(Integer stockMinimo) { this.stockMinimo = stockMinimo; }

@@ -25,16 +25,20 @@ public class InventarioController {
     }
 
     @GetMapping("/producto/{idProducto}")
-    public ResponseEntity<ApiResponse<Inventario>> porProducto(@PathVariable Integer idProducto) {
-        Inventario inv = inventarioRepository.findByIdProducto(idProducto)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventario", "id_producto", idProducto));
-        return ResponseEntity.ok(ApiResponse.ok(inv));
+    public ResponseEntity<ApiResponse<List<Inventario>>> porProducto(@PathVariable Integer idProducto) {
+        return ResponseEntity.ok(ApiResponse.ok(inventarioRepository.findAllByIdProducto(idProducto)));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<Inventario>> crear(@RequestBody Inventario inventario) {
+        if (inventario.getCantidadActual() == null || inventario.getCantidadActual() < 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor o igual a cero.");
+        }
+        if (inventario.getUbicacion() == null || inventario.getUbicacion().isBlank()) {
+            throw new IllegalArgumentException("Indica el almacén y estante de ubicación.");
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Registro de inventario creado", inventarioRepository.save(inventario)));
+                .body(ApiResponse.ok("Ubicación de inventario creada", inventarioRepository.save(inventario)));
     }
 
     @PutMapping("/{id}")
