@@ -11,6 +11,10 @@ target/
 *.war
 *.ear
 *.log
+build/
+out/
+
+# ===== IDEs =====
 .idea/
 *.iml
 *.iws
@@ -20,8 +24,13 @@ target/
 .project
 .classpath
 .factorypath
-build/
-out/
+.apt_generated
+.springBeans
+.sts4-cache
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
 
 # ===== Node (si se agrega) =====
 node_modules/
@@ -47,12 +56,9 @@ logs/
 *.swo
 *~
 
-# ===== Base de datos (no subas dumps con datos reales) =====
+# ===== Base de datos =====
 *.sql.bak
 Dump*.sql
 
 # ===== Spring Boot =====
 HELP.md
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
