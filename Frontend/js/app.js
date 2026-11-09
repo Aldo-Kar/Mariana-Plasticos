@@ -942,47 +942,56 @@ function enviarSugerencia(texto) {
 }
 
 async function enviarMensaje() {
-  const input = document.getElementById('chatInput');
-  const texto = input.value.trim();
-  if (!texto) return;
-  const box = document.getElementById('chatMessages');
-  box.innerHTML += `<div class="message user">${esc(texto)}</div>`;
-  input.value = '';
+    const input = document.getElementById('chatInput');
+    const texto = input.value.trim();
+    if (!texto) return;
 
-  const q = texto.toLowerCase();
-  let respuesta = 'No entendí la consulta. Prueba con: stock bajo, existencias, pedidos pendientes o reabastecimiento.';
+    const box = document.getElementById('chatMessages');
+    box.innerHTML += `<div class="message user">${esc(texto)}</div>`;
+    input.value = '';
 
-  try {
-    if (q.includes('stock bajo') || q.includes('reabaste')) {
-      const bajo = cache.inventario.filter(i => {
-        const p = byId(cache.productos, 'idProducto', i.idProducto);
-        return p && Number(i.cantidadActual) <= Number(p.stockMinimo || 0);
-      });
-      respuesta = bajo.length
-        ? 'Productos con stock bajo: ' + bajo.map(i => {
-          const p = byId(cache.productos, 'idProducto', i.idProducto);
-          return `${p?.nombre} (${i.cantidadActual} unidades)`;
-        }).join(', ')
-        : 'No hay productos con stock bajo.';
-    } else if (q.includes('existencias') || q.includes('stock de')) {
-      respuesta = 'Existencias actuales:\n' + cache.inventario.map(i => {
-        const p = byId(cache.productos, 'idProducto', i.idProducto);
-        return `• ${p?.nombre || 'Producto'}: ${i.cantidadActual} (${i.ubicacion})`;
-      }).join('\n');
-    } else if (q.includes('pedido')) {
-      const pendientes = cache.pedidos.filter(p => ['Pendiente', 'En preparación'].includes(p.estado));
-      respuesta = pendientes.length
-        ? `Hay ${pendientes.length} pedido(s) pendientes/en preparación.`
-        : 'No hay pedidos pendientes.';
+    // Mensaje temporal de espera
+    const esperandoId = 'msg-esperando-' + Date.now();
+    box.innerHTML += `<div id="${esperandoId}" class="message bot"><em>Mariana IA está pensando...</em></div>`;
+    box.scrollTop = box.scrollHeight;
+
+    // Construcción limpia del contexto del inventario actual
+    let contextoInventario = "INFORMACIÓN REAL DEL SISTEMA (USA ESTOS DATOS SI EL USUARIO PREGUNTA POR STOCK, EXISTENCIAS O PEDIDOS):\n";
+    contextoInventario += "- Productos en Inventario actual: " + JSON.stringify(cache.inventario || []) + "\n";
+    contextoInventario += "- Pedidos actuales: " + JSON.stringify(cache.pedidos || []) + "\n";
+
+    const promptCompleto = `${contextoInventario}\nPregunta del usuario: ${texto}`;
+
+    try {
+        const response = await fetch("http://localhost:8081/api/ia/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain"
+            },
+            body: promptCompleto
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error en el servidor: ${response.status}`);
+        }
+
+        const respuestaIA = await response.text();
+
+        // Eliminar mensaje de espera y mostrar la respuesta de Gemini
+        const elemEsperando = document.getElementById(esperandoId);
+        if (elemEsperando) elemEsperando.remove();
+        box.innerHTML += `<div class="message bot">${esc(respuestaIA).replace(/\n/g, '<br>')}</div>`;
+
+    } catch (error) {
+        console.error("Error al conectar con Mariana IA Backend:", error);
+        const elemEsperando = document.getElementById(esperandoId);
+        if (elemEsperando) elemEsperando.remove();
+        box.innerHTML += `<div class="message bot">Lo siento, hubo un problema al obtener respuesta del servidor de IA.</div>`;
     }
-  } catch (e) {
-    respuesta = 'Error al consultar los datos.';
-  }
 
-  box.innerHTML += `<div class="message bot">${esc(respuesta).replace(/\n/g, '<br>')}</div>`;
-  box.scrollTop = box.scrollHeight;
+    box.scrollTop = box.scrollHeight;
 }
-
+    
 // ==================== UTILIDADES ====================
 function cerrarModal(id) {
   document.getElementById(id)?.classList.remove('active');
