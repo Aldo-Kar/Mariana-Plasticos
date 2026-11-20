@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mariana Plásticos - Sistema de Inventario</title>
   <link rel="stylesheet" href="css/styles.css">
+  <!--<link rel="stylesheet" href="css/navidad.css">-->
   <link rel="stylesheet"
     href="https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css">
 </head>
@@ -26,14 +27,14 @@
       <div id="loginError" class="login-error"></div>
       <div class="form-group">
         <label>Correo electrónico</label>
-        <input type="email" id="loginEmail" placeholder="usuario@ejemplo.com" value="Oswaldo.admin@gmail.com">
+        <input type="email" id="loginEmail" placeholder="usuario@ejemplo.com" autocomplete="username">
       </div>
       <div class="form-group">
         <label>Contraseña</label>
-        <input type="password" id="loginPass" placeholder="••••••••" value="Oswaldo1234">
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="new-password">
       </div>
       <button class="btn btn-primary btn-full" onclick="login()">Ingresar al sistema</button>
-       <!-- <p style="margin-top: 1.5rem; color: var(--gray); font-size: 0.85rem; line-height: 1.5;">
+      <!-- <p style="margin-top: 1.5rem; color: var(--gray); font-size: 0.85rem; line-height: 1.5;">
         <strong>Usuarios de prueba:</strong><br>
         Admin: Oswaldo.admin@gmail.com / Oswaldo1234<br>
         Gerente: humberto.gerente@gmail.com / HumbertoG123<br>
@@ -205,7 +206,7 @@
           <div class="table-header">
             <div class="search-box" style="width:320px;">
               <i class="fi fi-rr-search"></i>
-              <input type="text" id="searchProductos" placeholder="Buscar por nombre o SKU..."
+              <input type="text" id="searchProductos" placeholder="Buscar por nombre, SKU o marca..."
                 oninput="renderProductos()">
             </div>
             <select id="filtroCategoria" onchange="renderProductos()"
@@ -214,18 +215,19 @@
               <option value="1">Envases</option>
               <option value="2">Bolsas</option>
               <option value="3">Desechables</option>
+              <option value="4">Accesorios</option>
             </select>
           </div>
           <table>
             <thead>
               <tr>
-                <th onclick="ordenarTabla('tablaProductos', 0)" style="cursor:pointer">Producto ↕</th>
-                <th onclick="ordenarTabla('tablaProductos', 1)" style="cursor:pointer">Categoría ↕</th>
-                <th onclick="ordenarTabla('tablaProductos', 2)" style="cursor:pointer">Marca ↕</th>
-                <th onclick="ordenarTabla('tablaProductos', 3)" style="cursor:pointer">Precio menudeo ↕</th>
-                <th onclick="ordenarTabla('tablaProductos', 4)" style="cursor:pointer">Precio mayoreo ↕</th>
-                <th onclick="ordenarTabla('tablaProductos', 5)" style="cursor:pointer">Stock ↕</th>
-                <th onclick="ordenarTabla('tablaProductos', 6)" style="cursor:pointer">Estado ↕</th>
+                <th onclick="ordenarTabla('tablaProductos', 0)" style="cursor:pointer">Producto</th>
+                <th onclick="ordenarTabla('tablaProductos', 1)" style="cursor:pointer">Categoría</th>
+                <th onclick="ordenarTabla('tablaProductos', 2)" style="cursor:pointer">Marca</th>
+                <th onclick="ordenarTabla('tablaProductos', 3)" style="cursor:pointer">Precio menudeo</th>
+                <th onclick="ordenarTabla('tablaProductos', 4)" style="cursor:pointer">Precio mayoreo</th>
+                <th onclick="ordenarTabla('tablaProductos', 5)" style="cursor:pointer">Stock</th>
+                <th onclick="ordenarTabla('tablaProductos', 6)" style="cursor:pointer">Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -241,18 +243,18 @@
           <div style="display:flex;gap:10px;">
             <!--<button class="btn btn-secondary" onclick="abrirModalInventario()">+ Agregar registro</button>-->
             <button class="btn btn-secondary" onclick="registrarEntradaSalida('Salida')">Registrar salida</button>
-            <button class="btn btn-primary" onclick="registrarEntradaSalida('Entrada')">+ Registrar entrada</button>
+            <button class="btn btn-primary" onclick="registrarEntradaSalida('Entrada')">Registrar entrada</button>
           </div>
         </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th onclick="ordenarTabla('tablaInventario', 0)" style="cursor:pointer">Producto ↕</th>
-                <th onclick="ordenarTabla('tablaInventario', 1)" style="cursor:pointer">Ubicación ↕</th>
-                <th onclick="ordenarTabla('tablaInventario', 2)" style="cursor:pointer">Cantidad actual ↕</th>
-                <th onclick="ordenarTabla('tablaInventario', 3)" style="cursor:pointer">Stock mínimo ↕</th>
-                <th onclick="ordenarTabla('tablaInventario', 4)" style="cursor:pointer">Estado ↕</th>
+                <th onclick="ordenarTabla('tablaInventario', 0)" style="cursor:pointer">Producto</th>
+                <th onclick="ordenarTabla('tablaInventario', 1)" style="cursor:pointer">Ubicación</th>
+                <th onclick="ordenarTabla('tablaInventario', 2)" style="cursor:pointer">Cantidad actual</th>
+                <th onclick="ordenarTabla('tablaInventario', 3)" style="cursor:pointer">Stock mínimo</th>
+                <th onclick="ordenarTabla('tablaInventario', 4)" style="cursor:pointer">Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -265,18 +267,21 @@
       <div id="movimientos" class="page">
         <div class="header">
           <h2>Movimientos de Inventario</h2>
-          <button class="btn btn-primary" onclick="registrarEntradaSalida('Entrada')">+ Nuevo movimiento</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="registrarEntradaSalida('Entrada')">Registrar Entrada</button>
+            <button class="btn btn-primary" onclick="registrarEntradaSalida('Salida')">Registrar Salida</button>
+          </div>
         </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th onclick="ordenarTabla('tablaMovimientos', 0)" style="cursor:pointer">Fecha ↕</th>
-                <th onclick="ordenarTabla('tablaMovimientos', 1)" style="cursor:pointer">Tipo ↕</th>
-                <th onclick="ordenarTabla('tablaMovimientos', 2)" style="cursor:pointer">Producto(s) ↕</th>
-                <th onclick="ordenarTabla('tablaMovimientos', 3)" style="cursor:pointer">Cantidad ↕</th>
-                <th onclick="ordenarTabla('tablaMovimientos', 4)" style="cursor:pointer">Usuario ↕</th>
-                <th onclick="ordenarTabla('tablaMovimientos', 5)" style="cursor:pointer">Observaciones ↕</th>
+                <th onclick="ordenarTabla('tablaMovimientos', 0)" style="cursor:pointer">Fecha</th>
+                <th onclick="ordenarTabla('tablaMovimientos', 1)" style="cursor:pointer">Tipo</th>
+                <th onclick="ordenarTabla('tablaMovimientos', 2)" style="cursor:pointer">Producto(s)</th>
+                <th onclick="ordenarTabla('tablaMovimientos', 3)" style="cursor:pointer">Cantidad</th>
+                <th onclick="ordenarTabla('tablaMovimientos', 4)" style="cursor:pointer">Usuario</th>
+                <th onclick="ordenarTabla('tablaMovimientos', 5)" style="cursor:pointer">Observaciones</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -289,18 +294,18 @@
       <div id="pedidos" class="page">
         <div class="header">
           <h2>Pedidos y Envíos</h2>
-          <button class="btn btn-primary" onclick="abrirModalPedido()">+ Nuevo pedido</button>
+          <button class="btn btn-primary" onclick="abrirModalPedido()">Nuevo pedido</button>
         </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th onclick="ordenarTabla('tablaPedidos', 0)" style="cursor:pointer">Pedido ↕</th>
-                <th onclick="ordenarTabla('tablaPedidos', 1)" style="cursor:pointer">Cliente ↕</th>
-                <th onclick="ordenarTabla('tablaPedidos', 2)" style="cursor:pointer">Fecha ↕</th>
-                <th onclick="ordenarTabla('tablaPedidos', 3)" style="cursor:pointer">Total ↕</th>
-                <th onclick="ordenarTabla('tablaPedidos', 4)" style="cursor:pointer">Estado ↕</th>
-                <th onclick="ordenarTabla('tablaPedidos', 5)" style="cursor:pointer">Observaciones ↕</th>
+                <th onclick="ordenarTabla('tablaPedidos', 0)" style="cursor:pointer">Pedido</th>
+                <th onclick="ordenarTabla('tablaPedidos', 1)" style="cursor:pointer">Cliente</th>
+                <th onclick="ordenarTabla('tablaPedidos', 2)" style="cursor:pointer">Fecha</th>
+                <th onclick="ordenarTabla('tablaPedidos', 3)" style="cursor:pointer">Total</th>
+                <th onclick="ordenarTabla('tablaPedidos', 4)" style="cursor:pointer">Estado</th>
+                <th onclick="ordenarTabla('tablaPedidos', 5)" style="cursor:pointer">Observaciones</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -392,31 +397,31 @@
       <div id="clientes" class="page">
         <div class="header">
           <h2>clientes</h2>
-          <button class="btn btn-primary" onclick="abrirModalCliente()">+ Registrar Cliente</button>
+          <button class="btn btn-primary" onclick="abrirModalCliente()">Registrar Cliente</button>
         </div>
         <div class="table-container">
           <div class="table-header">
             <div class="search-box" style="width:320px;">
               <i class="fi fi-rr-search"></i>
-              <input type="text" id="searchCliente" placeholder="Buscar por nombre o id" oninput="renderCliente()">
+              <input type="text" id="searchCliente" placeholder="Buscar por nombre, negocio o id" oninput="renderClientes()">
             </div>
-            <select id="filtroCategoria" onchange="renderCliente()"
+            <select id="filtroTipoCliente" onchange="renderClientes()"
               style="padding:0.5rem 1rem;border-radius:8px;border:1.5px solid #d1d5db;">
               <option value="">Todos los clientes</option>
-              <option value="1">mayoristas</option>
-              <option value="2">menudistas</option>
+              <option value="1">Mayoristas</option>
+              <option value="2">Menudistas</option>
             </select>
           </div>
           <table>
             <thead>
               <tr>
-                <th onclick="ordenarTabla('tablaclientes', 0)" style="cursor:pointer">Id ↕</th>
-                <th onclick="ordenarTabla('tablaclientes', 1)" style="cursor:pointer">Nombre ↕</th>
-                <th onclick="ordenarTabla('tablaclientes', 2)" style="cursor:pointer">Negocio ↕</th>
-                <th onclick="ordenarTabla('tablaclientes', 3)" style="cursor:pointer">Correo ↕</th>
-                <th onclick="ordenarTabla('tablaclientes', 4)" style="cursor:pointer">Teléfono ↕</th>
-                <th onclick="ordenarTabla('tablaclientes', 5)" style="cursor:pointer">Dirección ↕</th>
-                <th onclick="ordenarTabla('tablaclientes', 6)" style="cursor:pointer">Categoría ↕</th>
+                <th onclick="ordenarTabla('tablaclientes', 0)" style="cursor:pointer">Id</th>
+                <th onclick="ordenarTabla('tablaclientes', 1)" style="cursor:pointer">Nombre</th>
+                <th onclick="ordenarTabla('tablaclientes', 2)" style="cursor:pointer">Negocio</th>
+                <th onclick="ordenarTabla('tablaclientes', 3)" style="cursor:pointer">Correo</th>
+                <th onclick="ordenarTabla('tablaclientes', 4)" style="cursor:pointer">Teléfono</th>
+                <th onclick="ordenarTabla('tablaclientes', 5)" style="cursor:pointer">Dirección</th>
+                <th onclick="ordenarTabla('tablaclientes', 6)" style="cursor:pointer">Categoría</th>
               </tr>
             </thead>
             <tbody id="tablaclientes"></tbody>
@@ -440,21 +445,9 @@
           <div class="chat-messages" id="chatMessages">
             <div class="message bot">
               ¡Hola! Soy el asistente de inventario de Mariana Plásticos. Puedo ayudarte con:
-              <br>• Existencias en tiempo real
               <br>• Productos con bajo stock
               <br>• Movimientos recientes
-              <br>• Recomendaciones de reabastecimiento
               <br>• Estado de pedidos
-            </div>
-            <div class="suggestions">
-              <button class="suggestion-btn"
-                onclick="enviarSugerencia('¿Cuáles productos tienen stock bajo?')">Productos con stock bajo</button>
-              <button class="suggestion-btn"
-                onclick="enviarSugerencia('Existencias de Botella PET 1 litro')">Existencias Botella PET</button>
-              <button class="suggestion-btn"
-                onclick="enviarSugerencia('Recomendación de reabastecimiento')">Recomendación reabastecimiento</button>
-              <button class="suggestion-btn" onclick="enviarSugerencia('Mostrar pedidos pendientes')">Pedidos
-                pendientes</button>
             </div>
           </div>
           <div class="chat-input">
@@ -541,8 +534,10 @@
       <div class="modal-body">
         <input type="hidden" id="invId">
         <div class="form-group">
-          <label>Producto</label>
-          <select id="invProducto"></select>
+          <label>Producto (escribe nombre o SKU)</label>
+          <input type="text" id="invProductoInput" list="listaProductosInv" placeholder="Escribe nombre o SKU del producto..." autocomplete="off">
+          <datalist id="listaProductosInv"></datalist>
+          <input type="hidden" id="invProducto">
         </div>
         <div class="form-group">
           <label>Cantidad actual</label>
@@ -570,8 +565,10 @@
       <div class="modal-body">
         <input type="hidden" id="movTipo">
         <div class="form-group">
-          <label>Producto</label>
-          <select id="movProducto"></select>
+          <label>Producto (escribe nombre o SKU)</label>
+          <input type="text" id="movProductoInput" list="listaProductosMov" placeholder="Escribe nombre o SKU del producto..." autocomplete="off">
+          <datalist id="listaProductosMov"></datalist>
+          <input type="hidden" id="movProducto">
         </div>
         <div class="form-group">
           <label>Cantidad</label>
@@ -589,7 +586,7 @@
     </div>
   </div>
 
-  <!-- Modal Pedido -->
+ <!-- Modal Pedido -->
   <div class="modal-overlay" id="modalPedido">
     <div class="modal">
       <div class="modal-header">
@@ -599,8 +596,17 @@
       <div class="modal-body">
         <input type="hidden" id="pedId">
         <div class="form-group">
-          <label>Cliente</label>
-          <select id="pedCliente"></select>
+          <label>Cliente (escribe nombre o código)</label>
+          <div class="campo-busqueda">
+            <input 
+              type="text" 
+              id="pedCliente-busqueda" 
+              placeholder="Escribe nombre o código del cliente..."
+              autocomplete="off"
+            >
+            <div id="pedCliente-resultados" class="lista-sugerencias"></div>
+          </div>
+          <input type="hidden" id="pedCliente">
         </div>
         <div class="form-group">
           <label>Productos del pedido</label>
@@ -633,6 +639,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- ========== MODAL REGISTRAR / EDITAR CLIENTE ========== -->
   <div class="modal-overlay" id="modalCliente">
@@ -685,7 +692,6 @@
     </div>
   </div>
 
-  <script src="js/data.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>

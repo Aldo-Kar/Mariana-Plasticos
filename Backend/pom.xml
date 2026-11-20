@@ -48,14 +48,12 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Lombok (reduce codigo de getters/setters) - OPCIONAL -->
-        <!--
+        <!-- Lombok -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+         <optional>true</optional>
         </dependency>
-        -->
 
         <!-- Tests -->
         <dependency>

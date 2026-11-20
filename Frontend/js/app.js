@@ -57,21 +57,23 @@ async function login() {
   const correo = document.getElementById('loginEmail').value.trim();
   const contrasena = document.getElementById('loginPass').value;
   const errorEl = document.getElementById('loginError');
+
   if (!correo || !contrasena) {
     errorEl.textContent = 'Completa todos los campos';
     errorEl.style.display = 'block';
     return;
   }
+
   try {
     const u = await post('/auth/login', { correo, contrasena });
     usuarioActual = u;
-    localStorage.setItem('usuario', JSON.stringify(u));
     errorEl.style.display = 'none';
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+
     pintarUsuario();
-    await cargarDatos();
     await mostrarPagina('dashboard');
+
   } catch (e) {
     errorEl.textContent = e.message || 'No se pudo conectar con el servidor';
     errorEl.style.display = 'block';
@@ -87,11 +89,11 @@ function pintarUsuario() {
 
 function logout() {
   usuarioActual = null;
-  localStorage.removeItem('usuario');
   document.getElementById('app').style.display = 'none';
   document.getElementById('login').style.display = 'flex';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').style.display = 'none';
 }
 
 async function mostrarPagina(id) {
@@ -165,14 +167,14 @@ async function renderProductos() {
   };
 
   const lista = cache.productos.filter(p => {
-    const coincideTexto = (`${p.nombre || ''} ${p.sku || ''}`).toLowerCase().includes(texto);
+    const coincideTexto = (`${p.nombre || ''} ${p.sku || ''} ${p.marca || ''}`).toLowerCase().includes(texto);
     const coincideCat = !catFiltro || String(p.idCategoria) === String(catFiltro);
     return coincideTexto && coincideCat;
   });
 
   document.getElementById('tablaProductos').innerHTML = lista.length
     ? lista.map(p => {
-      const stock = stockReal(p.idProducto);   // ✅ Stock tomado del Inventario
+      const stock = stockReal(p.idProducto);   //  Stock tomado del Inventario
       return `<tr>
           <td><strong>${esc(p.nombre)}</strong><br><small>${esc(p.sku || 'Sin SKU')}</small></td>
           <td>${esc(byId(cache.categorias, 'idCategoria', p.idCategoria)?.nombre || p.idCategoria || '—')}</td>
@@ -197,11 +199,13 @@ async function renderProductos() {
     `<option value="${c.idCategoria}">${esc(c.nombre)}</option>`
   ).join('');
 
-  // Llenar filtro de categorías
+  // Llenar filtro de categorías (siempre, para incluir Accesorios y cualquier categoría nueva)
   const filtroSel = document.getElementById('filtroCategoria');
-  if (filtroSel && filtroSel.options.length <= 1) {
+  if (filtroSel) {
+    const valorActual = filtroSel.value;
     filtroSel.innerHTML = '<option value="">Todas las categorías</option>' +
       cache.categorias.map(c => `<option value="${c.idCategoria}">${esc(c.nombre)}</option>`).join('');
+    if (valorActual) filtroSel.value = valorActual;
   }
 }
 
@@ -334,13 +338,39 @@ async function renderInventario() {
 async function abrirModalInventario(id = null) {
   await renderInventario();
   const i = id ? byId(cache.inventario, 'idInventario', id) : null;
-  const sel = document.getElementById('invProducto');
-  sel.innerHTML = cache.productos.map(p => `<option value="${p.idProducto}">${esc(p.nombre)}</option>`).join('');
-  sel.disabled = !!i;
+
+  const datalist = document.getElementById('listaProductosInv');
+  datalist.innerHTML = cache.productos
+    .map(p => `<option value="${esc(p.nombre)} (${esc(p.sku || 'sin SKU')})" data-id="${p.idProducto}"></option>`)
+    .join('');
+
+  const input = document.getElementById('invProductoInput');
+  const hidden = document.getElementById('invProducto');
 
   document.querySelector('#modalInventario .modal-header h3').textContent = i ? 'Editar Inventario' : 'Agregar al Inventario';
   document.getElementById('invId').value = i?.idInventario || '';
-  if (i) sel.value = i.idProducto;
+
+  if (i) {
+    const p = byId(cache.productos, 'idProducto', i.idProducto);
+    input.value = p ? `${p.nombre} (${p.sku || 'sin SKU'})` : '';
+    hidden.value = i.idProducto;
+    input.disabled = true;
+  } else {
+    input.value = '';
+    hidden.value = '';
+    input.disabled = false;
+  }
+
+  input.oninput = () => {
+    const val = input.value.trim().toLowerCase();
+    const match = cache.productos.find(p =>
+      `${p.nombre} (${p.sku || 'sin SKU'})`.toLowerCase() === val ||
+      (p.nombre || '').toLowerCase() === val ||
+      (p.sku || '').toLowerCase() === val
+    );
+    hidden.value = match ? match.idProducto : '';
+  };
+
   document.getElementById('invCantidad').value = i?.cantidadActual ?? 0;
   document.getElementById('invUbicacion').value = i?.ubicacion || '';
   document.getElementById('modalInventario').classList.add('active');
@@ -362,7 +392,7 @@ async function guardarInventario() {
       await put(`/inventario/${id}`, { cantidadActual: cantidad, ubicacion });
       await put(`/productos/${idProducto}`, { stockActual: cantidad });
     } else {
-      if (!idProducto) { alert('Selecciona un producto.'); return; }
+      if (!idProducto) { alert('Escribe el nombre o SKU de un producto válido.'); return; }
       if (cache.inventario.some(i => Number(i.idProducto) === idProducto)) {
         alert('Este producto ya tiene un registro de inventario; edita el registro existente.');
         return;
@@ -429,23 +459,50 @@ async function registrarEntradaSalida(tipo) {
     await cargarDatos();
     document.getElementById('movTipo').value = tipo;
     document.getElementById('modalMovimientoTitle').textContent = `Registrar ${tipo.toLowerCase()}`;
-    document.getElementById('movProducto').innerHTML = cache.productos
-      .map(p => `<option value="${p.idProducto}">${esc(p.nombre)} (${esc(p.sku || 'sin SKU')})</option>`)
+
+    // Datalist para buscar por nombre o SKU
+    const datalist = document.getElementById('listaProductosMov');
+    datalist.innerHTML = cache.productos
+      .map(p => `<option value="${esc(p.nombre)} (${esc(p.sku || 'sin SKU')})" data-id="${p.idProducto}"></option>`)
       .join('');
+    document.getElementById('movProductoInput').value = '';
+    document.getElementById('movProducto').value = '';
     document.getElementById('movCantidad').value = 1;
     document.getElementById('movObservaciones').value = '';
     document.getElementById('modalMovimiento').classList.add('active');
+
+    // Resolver id al escribir / seleccionar
+    const input = document.getElementById('movProductoInput');
+    input.oninput = () => {
+      const val = input.value.trim().toLowerCase();
+      const match = cache.productos.find(p =>
+        `${p.nombre} (${p.sku || 'sin SKU'})`.toLowerCase() === val ||
+        (p.nombre || '').toLowerCase() === val ||
+        (p.sku || '').toLowerCase() === val
+      );
+      document.getElementById('movProducto').value = match ? match.idProducto : '';
+    };
   } catch (e) { showError(e); }
 }
 
 async function guardarMovimiento() {
   const tipo = document.getElementById('movTipo').value;
+  // Asegurar que el id esté resuelto por si el usuario no disparó oninput
+  const inputVal = (document.getElementById('movProductoInput')?.value || '').trim().toLowerCase();
+  if (inputVal && !document.getElementById('movProducto').value) {
+    const match = cache.productos.find(p =>
+      `${p.nombre} (${p.sku || 'sin SKU'})`.toLowerCase() === inputVal ||
+      (p.nombre || '').toLowerCase() === inputVal ||
+      (p.sku || '').toLowerCase() === inputVal
+    );
+    if (match) document.getElementById('movProducto').value = match.idProducto;
+  }
   const idProducto = Number(document.getElementById('movProducto').value);
   const cantidad = Number(document.getElementById('movCantidad').value);
-  const obs = document.getElementById('movObservaciones').value.trim();   // ✅ Solo lo que escribe el usuario
+  const obs = document.getElementById('movObservaciones').value.trim();   //  Solo lo que escribe el usuario
 
   if (!idProducto || !Number.isInteger(cantidad) || cantidad < 1) {
-    alert('Selecciona un producto e indica una cantidad entera mayor que cero.');
+    alert('Escribe el nombre o SKU de un producto válido e indica una cantidad entera mayor que cero.');
     return;
   }
 
@@ -468,7 +525,7 @@ async function guardarMovimiento() {
       return;
     }
 
-    // ✅ Observaciones LIMPIAS (solo lo que escribió el usuario)
+    //  Observaciones LIMPIAS (solo lo que escribió el usuario)
     await post('/movimientos', {
       idUsuario: usuarioId,
       tipoMovimiento: tipo,
@@ -504,21 +561,37 @@ async function renderPedidos() {
   cache.pedidos = pedidos;
   cache.clientes = clientes;
 
+  //Secuencia completa de estados
+  const secuenciaIA = {
+    'Pendiente': 'En preparación',
+    'En preparación': 'Enviado',
+    'Enviado': 'Entregado'
+  };
+
   document.getElementById('tablaPedidos').innerHTML = pedidos.length
-    ? pedidos.map(p => `<tr>
-        <td>#${p.idPedido}</td>
-        <td>${esc(byId(clientes, 'idCliente', p.idCliente)?.nombre || `Cliente #${p.idCliente}`)}</td>
-        <td>${date(p.fechaPedido)}</td>
-        <td>${money(p.total)}</td>
-        <td><span class="badge">${esc(p.estado || '—')}</span></td>
-        <td>${esc(p.observaciones || '—')}</td>
-        <td class="actions">
-  <button class="btn-icon" title="Imprimir reporte del pedido" onclick="imprimirReportePedido(${p.idPedido})">🖨️</button>
-  ${botonEliminarAdmin(`eliminarPedido(${p.idPedido})`)}
-</td>
-      </tr>`).join('')
+    ? pedidos.map(p => {
+        const puedeAvanzar = secuenciaIA.hasOwnProperty(p.estado);
+        const siguienteEstado = secuenciaIA[p.estado];
+        
+        return `<tr>
+          <td>#${p.idPedido}</td>
+          <td>${esc(byId(clientes, 'idCliente', p.idCliente)?.nombre || `Cliente #${p.idCliente}`)}</td>
+          <td>${date(p.fechaPedido)}</td>
+          <td>${money(p.total)}</td>
+          <td><span class="badge estado ${p.estado === 'Enviado' ? 'estado-enviado' : p.estado === 'Entregado' ? 'estado-entregado' : ''}">${esc(p.estado || '—')}</span></td>
+          <td>${esc(p.observaciones || '—')}</td>
+          <td class="actions">
+            ${puedeAvanzar
+              ? `<button class="btn-icon btn-success" title="IA: Pasar a ${siguienteEstado}" onclick="iaAvanzarPedido(${p.idPedido}, '${p.estado}', '${siguienteEstado}')">ENV</button>`
+              : ''}
+            <button class="btn-icon" title="Imprimir reporte del pedido" onclick="imprimirReportePedido(${p.idPedido})"><i class="fi fi-rr-print"></i></button>
+            ${botonEliminarAdmin(`eliminarPedido(${p.idPedido})`)}
+          </td>
+        </tr>`;
+      }).join('')
     : '<tr><td colspan="7" style="text-align:center">No hay pedidos registrados</td></tr>';
 }
+
 
 function opcionesProductosPedido() {
   return `<option value="">Selecciona un producto</option>` + cache.productos
@@ -530,69 +603,183 @@ function agregarLineaPedido(idProducto = '', cantidad = 1) {
   const fila = document.createElement('div');
   fila.className = 'pedido-linea';
   fila.innerHTML = `
-    <select class="ped-linea-producto" aria-label="Producto">${opcionesProductosPedido()}</select>
+    <div class="campo-busqueda-inline">
+      <input 
+        type="text" 
+        class="ped-linea-producto-buscar" 
+        placeholder="Escribe nombre o SKU..."
+        autocomplete="off"
+      >
+      <div class="lista-sugerencias"></div>
+      <input type="hidden" class="ped-linea-producto-id" value="${idProducto}">
+    </div>
     <input class="ped-linea-cantidad" type="number" min="1" step="1" value="${Number(cantidad) || 1}" aria-label="Cantidad">
     <button type="button" class="btn-icon danger" title="Quitar producto" aria-label="Quitar producto">✕</button>`;
-  fila.querySelector('.ped-linea-producto').value = idProducto;
-  fila.querySelector('.ped-linea-producto').addEventListener('change', actualizarTotalPedidoVista);
+
   fila.querySelector('.ped-linea-cantidad').addEventListener('input', actualizarTotalPedidoVista);
   fila.querySelector('button').addEventListener('click', () => {
     fila.remove();
     if (!contenedor.children.length) agregarLineaPedido();
     actualizarTotalPedidoVista();
   });
+
   contenedor.appendChild(fila);
+
+  // Inicializar búsqueda en esta fila
+  inicializarBusquedaProducto(fila.querySelector('.campo-busqueda-inline'), idProducto);
+
   actualizarTotalPedidoVista();
 }
 
 function actualizarTotalPedidoVista() {
+  // Obtener todas las filas del pedido
   const filas = [...document.querySelectorAll('#pedLineas .pedido-linea')];
+  
+  // Calcular suma de cada fila: precio × cantidad
   const total = filas.reduce((suma, fila) => {
-    const producto = byId(cache.productos, 'idProducto', fila.querySelector('.ped-linea-producto').value);
+    const idProd = Number(fila.querySelector('.ped-linea-producto-id').value);
     const cantidad = Number(fila.querySelector('.ped-linea-cantidad').value) || 0;
-    return suma + (Number(producto?.precioUnitario) || 0) * cantidad;
+    
+    // Buscar el producto en caché para obtener su precio
+    const producto = cache.productos.find(p => Number(p.idProducto) === idProd);
+    
+    // Sumar solo si hay producto válido
+    return suma + (producto ? Number(producto.precioUnitario) * cantidad : 0);
   }, 0);
-  document.getElementById('pedTotalVista').value = money(total);
+
+  // Mostrar formateado como moneda mexicana ($0.00)
+  const elementoTotal = document.getElementById('pedTotalVista');
+  if (elementoTotal) {
+    elementoTotal.value = money(total);
+  }
 }
 
 async function abrirModalPedido() {
   await cargarDatos();
   document.getElementById('pedId').value = '';
   document.getElementById('modalPedidoTitle').textContent = 'Nuevo pedido';
-  document.getElementById('pedCliente').innerHTML = cache.clientes
-    .map(c => `<option value="${c.idCliente}">${esc(c.nombre)}</option>`).join('');
   document.getElementById('pedEstado').value = 'Pendiente';
   document.getElementById('pedObservaciones').value = '';
   document.getElementById('pedLineas').innerHTML = '';
   agregarLineaPedido();
+
+  // Elementos
+  const inputBusqueda = document.getElementById('pedCliente-busqueda');
+  const divResultados = document.getElementById('pedCliente-resultados');
+  const inputIdCliente = document.getElementById('pedCliente');
+
+  // Limpiar
+  inputBusqueda.value = '';
+  divResultados.innerHTML = '';
+  inputIdCliente.value = '';
+
+  //ESCUCHAR LO QUE ESCRIBES — SIN clonar
+  inputBusqueda.oninput = function () {
+    const termino = this.value.trim().toLowerCase();
+    divResultados.innerHTML = '';
+
+    if (termino.length < 1 || !cache.clientes.length) return;
+
+    // Filtrar clientes
+    const resultados = cache.clientes.filter(c => {
+      const idTexto = String(c.idCliente);
+      const idFormateado = idTexto.padStart(5, '0');
+      return (
+        (c.nombre && c.nombre.toLowerCase().includes(termino)) ||
+        (c.negocio && c.negocio.toLowerCase().includes(termino)) ||
+        idTexto.includes(termino) ||
+        idFormateado.includes(termino)
+      );
+    });
+
+    // Mostrar mensaje si no hay resultados
+    if (resultados.length === 0) {
+      divResultados.innerHTML = '<div class="item-sugerencia">No se encontraron clientes</div>';
+      return;
+    }
+
+    // Mostrar cada cliente
+    resultados.forEach(c => {
+      const opcion = document.createElement('div');
+      opcion.className = 'item-sugerencia';
+      opcion.innerHTML = `
+        <strong>${esc(c.nombre)}</strong>
+        <br><span>#${String(c.idCliente).padStart(5, '0')} · ${esc(c.negocio)}</span>
+      `;
+      opcion.onclick = function () {
+        inputBusqueda.value = c.nombre;
+        inputIdCliente.value = c.idCliente;
+        divResultados.innerHTML = '';
+      };
+      divResultados.appendChild(opcion);
+    });
+  };
+
+  // Cerrar al hacer clic fuera
+  document.onclick = function (e) {
+    if (!inputBusqueda.contains(e.target) && !divResultados.contains(e.target)) {
+      divResultados.innerHTML = '';
+    }
+  };
+
   document.getElementById('modalPedido').classList.add('active');
 }
 
 async function guardarPedido() {
-  const cliente = Number(document.getElementById('pedCliente').value);
+  // 1. Recuperar valores del formulario
+  const idCliente = Number(document.getElementById('pedCliente').value);
   const filas = [...document.querySelectorAll('#pedLineas .pedido-linea')];
-  const productos = filas.map(fila => ({
-    idProducto: Number(fila.querySelector('.ped-linea-producto').value),
-    cantidad: Number(fila.querySelector('.ped-linea-cantidad').value)
-  }));
-  const estado = document.getElementById('pedEstado').value;
+  const estado = document.getElementById('pedEstado').value.trim();
   const observaciones = document.getElementById('pedObservaciones').value.trim();
 
-  if (!cliente) return alert('Selecciona un cliente.');
-  if (!productos.length || productos.some(x => !x.idProducto || !Number.isInteger(x.cantidad) || x.cantidad < 1))
-    return alert('Selecciona un producto y una cantidad válida en cada renglón.');
-  if (new Set(productos.map(x => x.idProducto)).size !== productos.length)
-    return alert('No repitas productos. Modifica la cantidad en el renglón existente.');
+  // 2. Construir lista de productos
+  const productos = filas.map((fila, indice) => {
+    const idProducto = Number(fila.querySelector('.ped-linea-producto-id').value);
+    const cantidad = Number(fila.querySelector('.ped-linea-cantidad').value);
+    return { idProducto, cantidad, fila: indice + 1 };
+  });
 
+  // 3. Validaciones
+  if (!idCliente || isNaN(idCliente)) {
+    return alert('Selecciona un cliente de la lista antes de guardar.');
+  }
+
+  if (productos.length === 0) {
+    return alert('Agrega al menos un producto al pedido.');
+  }
+
+  const filasInvalidas = productos.filter(p => !p.idProducto || !Number.isInteger(p.cantidad) || p.cantidad < 1);
+  if (filasInvalidas.length > 0) {
+    return alert(`Revisa el renglón ${filasInvalidas.map(f => f.fila).join(', ')}:\nSelecciona un producto y usa una cantidad entera mayor a 0.`);
+  }
+
+  const idsProductos = productos.map(p => p.idProducto);
+  if (new Set(idsProductos).size !== productos.length) {
+    return alert('No puedes repetir el mismo producto.\nModifica la cantidad en el renglón existente.');
+  }
+
+  // 4. Enviar al backend
   try {
-    await post('/pedidos', { idCliente: cliente, estado, observaciones: observaciones || null, productos });
+    await post('/pedidos', {
+      idCliente,
+      estado,
+      observaciones: observaciones || null,
+      productos: productos.map(({ idProducto, cantidad }) => ({ idProducto, cantidad }))
+    });
+
     cerrarModal('modalPedido');
     await cargarDatos();
     await renderPedidos();
     await renderDashboard();
-    alert('Pedido con varios productos guardado correctamente.');
-  } catch (e) { showError(e); }
+    alert('✅ Pedido guardado correctamente.');
+
+  } catch (error) {
+    console.error('Error al guardar el pedido:', error);
+    showError(error);
+  }
 }
+
+
 
 async function imprimirReportePedido(id) {
   try {
@@ -641,6 +828,10 @@ async function generarReporte() {
   const tbody = document.getElementById('tbodyReporte');
   const titulo = document.getElementById('tituloReporte');
   const total = document.getElementById('totalRegistros');
+
+  const fechaDesde = document.getElementById('fechaDesde')?.value || '';
+  const fechaHasta = document.getElementById('fechaHasta')?.value || '';
+  const filtroEstado = document.getElementById('estadoPedido')?.value || '';
 
   let htmlHead = '';
   let htmlBody = '';
@@ -696,7 +887,93 @@ async function generarReporte() {
     }).join('');
   }
 
-  // Puedes seguir agregando los demás reportes (movimientos, pedidos, clientes)...
+  else if (tipo === 'movimientos') {
+    titulo.textContent = 'Movimientos de inventario';
+    htmlHead = `<tr>
+      <th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Observaciones</th>
+    </tr>`;
+
+    datos = (cache.movimientos || []).filter(m => {
+      if (!m.fechaMovimiento) return false;
+      const f = new Date(m.fechaMovimiento);
+      if (fechaDesde) {
+        const d = new Date(fechaDesde);
+        if (f < d) return false;
+      }
+      if (fechaHasta) {
+        const h = new Date(fechaHasta);
+        h.setHours(23, 59, 59, 999);
+        if (f > h) return false;
+      }
+      return true;
+    }).sort((a, b) => new Date(b.fechaMovimiento) - new Date(a.fechaMovimiento));
+
+    htmlBody = datos.map(m => {
+      const p = byId(cache.productos, 'idProducto', m.idProducto);
+      return `<tr>
+        <td>${date(m.fechaMovimiento)}</td>
+        <td>${esc(m.tipoMovimiento || '—')}</td>
+        <td>${esc(p?.nombre || '—')}</td>
+        <td>${m.cantidad ?? '—'}</td>
+        <td>${esc(m.observaciones || '—')}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  else if (tipo === 'pedidos') {
+    titulo.textContent = 'Pedidos';
+    htmlHead = `<tr>
+      <th>ID</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Observaciones</th>
+    </tr>`;
+
+    datos = (cache.pedidos || []).filter(p => {
+      if (filtroEstado && p.estado !== filtroEstado) return false;
+      if (!p.fechaPedido) return true;
+      const f = new Date(p.fechaPedido);
+      if (fechaDesde) {
+        const d = new Date(fechaDesde);
+        if (f < d) return false;
+      }
+      if (fechaHasta) {
+        const h = new Date(fechaHasta);
+        h.setHours(23, 59, 59, 999);
+        if (f > h) return false;
+      }
+      return true;
+    }).sort((a, b) => new Date(b.fechaPedido) - new Date(a.fechaPedido));
+
+    htmlBody = datos.map(p => {
+      const c = byId(cache.clientes, 'idCliente', p.idCliente);
+      return `<tr>
+        <td>#${p.idPedido}</td>
+        <td>${esc(c?.nombre || `Cliente #${p.idCliente}`)}</td>
+        <td>${date(p.fechaPedido)}</td>
+        <td>${money(p.total)}</td>
+        <td>${esc(p.estado || '—')}</td>
+        <td>${esc(p.observaciones || '—')}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  else if (tipo === 'clientes') {
+    titulo.textContent = 'Clientes';
+    htmlHead = `<tr>
+      <th>ID</th><th>Nombre</th><th>Negocio</th><th>Correo</th><th>Teléfono</th><th>Dirección</th><th>Tipo</th>
+    </tr>`;
+
+    datos = cache.clientes || [];
+
+    htmlBody = datos.map(c => `
+      <tr>
+        <td>${String(c.idCliente).padStart(4, '0')}</td>
+        <td>${esc(c.nombre || '')}</td>
+        <td>${esc(c.negocio || '—')}</td>
+        <td>${esc(c.correo || '')}</td>
+        <td>${esc(c.telefono || '')}</td>
+        <td>${esc(c.direccion || '')}</td>
+        <td>${c.categoria == 1 ? 'Mayorista' : c.categoria == 2 ? 'Menudista' : '—'}</td>
+      </tr>`).join('');
+  }
 
   thead.innerHTML = htmlHead;
   tbody.innerHTML = htmlBody || `<tr><td colspan="10" style="text-align:center">No hay datos</td></tr>`;
@@ -704,7 +981,39 @@ async function generarReporte() {
 }
 
 function exportarExcel() {
-  alert('Función de exportar a Excel (la implementamos después)');
+  const thead = document.getElementById('theadReporte');
+  const tbody = document.getElementById('tbodyReporte');
+  const titulo = document.getElementById('tituloReporte')?.textContent || 'Reporte';
+
+  if (!thead || !tbody || tbody.querySelector('td[colspan]')) {
+    alert('Primero genera un reporte para poder exportarlo.');
+    return;
+  }
+
+  const filas = [];
+  // Encabezados
+  const ths = Array.from(thead.querySelectorAll('th')).map(th => `"${th.textContent.trim().replace(/"/g, '""')}"`);
+  filas.push(ths.join(','));
+
+  // Datos
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const celdas = Array.from(tr.querySelectorAll('td')).map(td => {
+      let texto = td.textContent.trim().replace(/"/g, '""');
+      return `"${texto}"`;
+    });
+    if (celdas.length) filas.push(celdas.join(','));
+  });
+
+  const csv = '\uFEFF' + filas.join('\n'); // BOM para Excel en español
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${titulo.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 async function generarReporteDelDia() {
@@ -823,7 +1132,7 @@ async function renderClientes() {
   }
 
   const texto = (document.getElementById('searchCliente')?.value || '').toLowerCase().trim();
-  const filtroCat = document.getElementById('filtroCategoria')?.value || '';
+  const filtroTipo = document.getElementById('filtroTipoCliente')?.value || '';
 
   const lista = cache.clientes.filter(c => {
     const idFormateado = String(c.idCliente).padStart(4, '0');   // ← 0001, 0002...
@@ -832,8 +1141,8 @@ async function renderClientes() {
       `${c.idCliente || ''} ${idFormateado} ${c.nombre || ''} ${c.negocio || ''} ${c.correo || ''}`
     ).toLowerCase().includes(texto);
 
-    const coincideCat = !filtroCat || String(c.categoria) === String(filtroCat);
-    return coincideTexto && coincideCat;
+    const coincideTipo = !filtroTipo || String(c.categoria) === String(filtroTipo);
+    return coincideTexto && coincideTipo;
   });
 
   const tbody = document.getElementById('tablaclientes');
@@ -935,63 +1244,61 @@ async function guardarCliente() {
   }
 }
 
-// ==================== ASISTENTE IA (simulado) ====================
-function enviarSugerencia(texto) {
-  document.getElementById('chatInput').value = texto;
-  enviarMensaje();
-}
-
 async function enviarMensaje() {
-    const input = document.getElementById('chatInput');
-    const texto = input.value.trim();
-    if (!texto) return;
+  const input = document.getElementById('chatInput');
+  const texto = input.value.trim();
+  if (!texto) return;
 
-    const box = document.getElementById('chatMessages');
-    box.innerHTML += `<div class="message user">${esc(texto)}</div>`;
-    input.value = '';
+  const box = document.getElementById('chatMessages');
+  box.innerHTML += `<div class="message user">${esc(texto)}</div>`;
+  input.value = '';
 
-    // Mensaje temporal de espera
-    const esperandoId = 'msg-esperando-' + Date.now();
-    box.innerHTML += `<div id="${esperandoId}" class="message bot"><em>Mariana IA está pensando...</em></div>`;
-    box.scrollTop = box.scrollHeight;
+  // Mensaje de espera
+  const esperandoId = 'msg-esperando-' + Date.now();
+  box.innerHTML += `<div id="${esperandoId}" class="message bot"><em>Mariana IA está pensando...</em></div>`;
+  box.scrollTop = box.scrollHeight;
 
-    // Construcción limpia del contexto del inventario actual
-    let contextoInventario = "INFORMACIÓN REAL DEL SISTEMA (USA ESTOS DATOS SI EL USUARIO PREGUNTA POR STOCK, EXISTENCIAS O PEDIDOS):\n";
-    contextoInventario += "- Productos en Inventario actual: " + JSON.stringify(cache.inventario || []) + "\n";
-    contextoInventario += "- Pedidos actuales: " + JSON.stringify(cache.pedidos || []) + "\n";
+  const BASE_URL = "https://mariana-plasticos-backend.onrender.com/api";
 
-    const promptCompleto = `${contextoInventario}\nPregunta del usuario: ${texto}`;
+  try {
+    //  RUTA CORRECTA: /asistente/consultar
+    const response = await fetch(`${BASE_URL}/asistente/consultar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ consulta: texto }) //  Campo correcto: "consulta"
+    });
 
+    //  Leer como texto primero para evitar error de JSON
+    const textoRespuesta = await response.text();
+    let datos;
     try {
-        const response = await fetch("http://localhost:8081/api/ia/chat", {
-            method: "POST",
-            headers: {
-                "Content-Type": "text/plain"
-            },
-            body: promptCompleto
-        });
-
-        if (!response.ok) {
-            throw new Error(`Error en el servidor: ${response.status}`);
-        }
-
-        const respuestaIA = await response.text();
-
-        // Eliminar mensaje de espera y mostrar la respuesta de Gemini
-        const elemEsperando = document.getElementById(esperandoId);
-        if (elemEsperando) elemEsperando.remove();
-        box.innerHTML += `<div class="message bot">${esc(respuestaIA).replace(/\n/g, '<br>')}</div>`;
-
-    } catch (error) {
-        console.error("Error al conectar con Mariana IA Backend:", error);
-        const elemEsperando = document.getElementById(esperandoId);
-        if (elemEsperando) elemEsperando.remove();
-        box.innerHTML += `<div class="message bot">Lo siento, hubo un problema al obtener respuesta del servidor de IA.</div>`;
+      datos = JSON.parse(textoRespuesta);
+    } catch {
+      throw new Error(textoRespuesta || "Respuesta no válida");
     }
 
-    box.scrollTop = box.scrollHeight;
+    if (!response.ok || !datos.success) {
+      throw new Error(datos.message || `Error ${response.status}`);
+    }
+
+    //  Mostrar respuesta real del backend
+    const elemEsperando = document.getElementById(esperandoId);
+    if (elemEsperando) elemEsperando.remove();
+    box.innerHTML += `<div class="message bot">${esc(datos.message).replace(/\n/g, '<br>')}</div>`;
+
+  } catch (error) {
+    console.error("Error:", error);
+    const elemEsperando = document.getElementById(esperandoId);
+    if (elemEsperando) elemEsperando.remove();
+
+    //  Mensaje de error claro
+    box.innerHTML += `<div class="message bot"> ${error.message}<br>Si Render estaba inactivo, espera 30s y vuelve a intentar.</div>`;
+  }
+
+  box.scrollTop = box.scrollHeight;
 }
-    
+
+
 // ==================== UTILIDADES ====================
 function cerrarModal(id) {
   document.getElementById(id)?.classList.remove('active');
@@ -1001,19 +1308,14 @@ function cerrarModal(id) {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('searchProductos')?.addEventListener('input', () => renderProductos().catch(showError));
   document.getElementById('searchCliente')?.addEventListener('input', () => renderClientes().catch(showError));
-  document.getElementById('filtroCategoria')?.addEventListener('change', () => renderClientes().catch(showError));
+  document.getElementById('filtroTipoCliente')?.addEventListener('change', () => renderClientes().catch(showError));
+  document.getElementById('filtroCategoria')?.addEventListener('change', () => renderProductos().catch(showError));
 
-  // Restaurar sesión si existe
-  const guardado = localStorage.getItem('usuario');
-  if (guardado) {
-    try {
-      usuarioActual = JSON.parse(guardado);
-      document.getElementById('login').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      pintarUsuario();
-      cargarDatos().then(() => mostrarPagina('dashboard'));
-    } catch { }
-  }
+    // No conservar la sesión al cerrar o actualizar la aplicación
+  usuarioActual = null;
+  localStorage.removeItem('usuario');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
 });
 
 // Estado de ordenamiento por tabla
@@ -1083,4 +1385,145 @@ function botonesAdmin(editarOnClick, eliminarOnClick) {
 function botonEliminarAdmin(eliminarOnClick) {
   if (!esAdmin()) return '';
   return `<button class="btn-icon danger" title="Eliminar" onclick="${eliminarOnClick}">🗑️</button>`;
+}
+
+async function confirmarEntregaPorIA(idPedido, motivo = "Confirmado automáticamente") {
+  if (!confirm(`¿Marcar pedido #${idPedido} como Entregado?`)) return;
+
+  try {
+    const respuesta = await fetch(
+      `${API_BASE}/pedidos/${idPedido}/entregar-ia?motivo=${encodeURIComponent(motivo)}`,
+      { method: 'PATCH' }
+    );
+
+    const datos = await respuesta.json().catch(() => ({}));
+    
+    if (respuesta.ok && datos.success !== false) {
+      alert('✅ ' + (datos.message || 'Pedido marcado como Entregado'));
+      await cargarDatos();
+      await renderPedidos(); // Refrescar la tabla
+      return true;
+    } else {
+      alert('⚠️ ' + (datos.message || 'No se pudo actualizar'));
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error:', error);
+    alert('Error de conexión con el servidor. Verifica que el backend esté activo.');
+    return false;
+  }
+}
+
+// ========== BÚSQUEDA DE PRODUCTOS EN LÍNEAS DE PEDIDO ==========
+function inicializarBusquedaProducto(contenedor, idSeleccionado = '') {
+  const inputBuscar = contenedor.querySelector('.ped-linea-producto-buscar');
+  const resultados = contenedor.querySelector('.lista-sugerencias');
+  const inputId = contenedor.querySelector('.ped-linea-producto-id');
+
+  // Si viene un ID precargado, mostrar el nombre del producto
+  if (idSeleccionado && cache.productos.length) {
+    const producto = cache.productos.find(p => String(p.idProducto) === String(idSeleccionado));
+    if (producto) {
+      inputBuscar.value = producto.nombre;
+      inputId.value = producto.idProducto;
+    }
+  }
+
+  // Buscar mientras escribe
+  inputBuscar.addEventListener('input', () => {
+    const termino = inputBuscar.value.trim().toLowerCase();
+    resultados.innerHTML = '';
+
+    if (termino.length < 2 || !cache.productos.length) return;
+
+    const coinciden = cache.productos.filter(p =>
+      (p.nombre && p.nombre.toLowerCase().includes(termino)) ||
+      (p.sku && p.sku.toLowerCase().includes(termino))
+    );
+
+    coinciden.forEach(producto => {
+      const opcion = document.createElement('div');
+      opcion.className = 'item-sugerencia';
+      opcion.innerHTML = `
+        <strong>${producto.nombre}</strong><br>
+        <span class="sku">${producto.sku || 'SIN-SKU'}</span> — $${(producto.precioUnitario || 0).toFixed(2)}
+      `;
+      opcion.addEventListener('click', () => {
+        inputBuscar.value = producto.nombre;
+        inputId.value = producto.idProducto;
+        resultados.innerHTML = '';
+        actualizarTotalPedidoVista();
+      });
+      resultados.appendChild(opcion);
+    });
+  });
+
+  // Cerrar lista al hacer clic fuera
+  document.addEventListener('click', e => {
+    if (!contenedor.contains(e.target)) resultados.innerHTML = '';
+  });
+}
+
+// ========== FUNCIONES AUXILIARES FALTANTES ==========
+function cerrarModal(id) {
+  document.getElementById(id)?.classList.remove('active');
+}
+
+//Función central de automatización de estados
+async function iaAvanzarPedido(idPedido, estadoActual, estadoSiguiente) {
+  const confirmar = confirm(
+    `Asistente IA\n\n` +
+    `Pedido #${idPedido}\n` +
+    `Estado actual: ${estadoActual}\n` +
+    `→ Cambiar a: ${estadoSiguiente}\n\n` +
+    `¿Confirmar cambio automático?`
+  );
+  
+  if (!confirmar) return;
+
+  try {
+    await actualizarPedido(idPedido, {
+      estado: estadoSiguiente,
+      observaciones: `IA: Confirmado automáticamente — pasó de "${estadoActual}" a "${estadoSiguiente}"`
+    });
+    
+    alert(`Pedido #${idPedido} actualizado a: ${estadoSiguiente}`);
+    await cargarPedidos(); // Refrescar tabla
+  } catch (error) {
+    alert(`Error: ${error.message}`);
+  }
+}
+
+//Función de automatización de estados por IA — CORREGIDA
+async function iaAvanzarPedido(idPedido, estadoActual, estadoSiguiente) {
+  const confirmar = confirm(
+    `Asistente IA\n\n` +
+    `Pedido #${idPedido}\n` +
+    `Estado actual: ${estadoActual}\n` +
+    `→ Cambiar a: ${estadoSiguiente}\n\n` +
+    `¿Confirmar cambio automático?`
+  );
+  
+  if (!confirmar) return;
+
+  try {
+    //Si va a Entregado → usamos la ruta que ya funciona
+    if (estadoSiguiente === 'Entregado') {
+      return await confirmarEntregaPorIA(idPedido, `IA: Cambiado automáticamente de "${estadoActual}" a "${estadoSiguiente}"`);
+    }
+
+    //Para los demás estados → usamos PUT /pedidos/{id} que ya existe
+    const respuesta = await put(`/pedidos/${idPedido}`, {
+      estado: estadoSiguiente,
+      observaciones: `IA: Cambiado automáticamente de "${estadoActual}" a "${estadoSiguiente}"`
+    });
+
+    alert(`Pedido #${idPedido} → ${estadoSiguiente}`);
+    await cargarDatos();
+    await renderPedidos();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert(`No se pudo actualizar el estado.\nVerifica que el servidor esté activo.`);
+  }
 }

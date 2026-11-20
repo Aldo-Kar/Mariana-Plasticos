@@ -46,6 +46,8 @@ dist/
 .env.*.local
 application-local.properties
 application-secret.properties
+application.properties   #Protege tu configuración local
+*.mwb                    #Archivos de trabajo de MySQL Workbench
 
 # ===== Logs y temporales =====
 logs/

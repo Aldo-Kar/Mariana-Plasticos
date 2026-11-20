@@ -1,9 +1,12 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Entity
+@Data  // Esto genera TODOS los getters y setters
 @Table(name = "movimientos")
 public class Movimiento {
 

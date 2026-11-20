@@ -2,8 +2,7 @@
 
 Sistema de inventario web para **Mariana Plásticos S. de R.L.**, desarrollado como proyecto académico (UAEM — Ingeniería en Sistemas Inteligentes).
 
-Permite gestionar productos, inventario, movimientos de entrada/salida, pedidos de clientes y consultas mediante un asistente con IA (simulado).
-
+Permite gestionar productos, inventario, movimientos de entrada/salida, pedidos de clientes y consultas mediante un asistente inteligente conectado al backend.
 ---
 
 ## Equipo
@@ -23,11 +22,13 @@ Permite gestionar productos, inventario, movimientos de entrada/salida, pedidos 
 | Capa | Tecnología |
 |---|---|
 | Frontend | HTML5, CSS3, JavaScript (vanilla) |
-| Backend | Java 17 + Spring Boot 4.1.x (Spring Web + Spring Data JPA) |
-| Base de datos | MySQL 8 |
+| Backend | Java 17 + Spring Boot 4.1.1 (Web, Data JPA, Validation) |
+| Base de datos | MySQL 8 / WorkBench (compatible MySQL) |
+| IA | Asistente basado en datos de la API + servicio Gemini (Google) |
 | Comunicación | APIs REST (JSON) |
+| Contenedores | Docker (multi-stage Maven + JRE 17) |
 | Control de versiones | Git + GitHub |
-| IDE | VS Code / IntelliJ IDEA / Spring Tool Suite |
+| IDE | VS Code  / Spring Tool Suite |
 
 ---
 
@@ -35,32 +36,32 @@ Permite gestionar productos, inventario, movimientos de entrada/salida, pedidos 
 
 ```
 Mariana-Plasticos/
-├── Backend/
-│   ├── mariana_plasticos.sql          # Script de BD (estructura + datos de prueba)
-│   └── demo/demo/                     # Proyecto Spring Boot (Maven)
-│       ├── pom.xml
-│       ├── mvnw / mvnw.cmd
-│       └── src/main/
-│           ├── java/com/example/demo/
-│           │   ├── MarianaPlasticosApplication.java
-│           │   ├── config/            # CORS
-│           │   ├── controller/        # Endpoints REST
-│           │   ├── entity/            # Entidades JPA
-│           │   ├── repository/        # Repositorios JPA
-│           │   ├── service/           # Lógica de negocio
-│           │   ├── dto/               # DTOs de request/response
-│           │   └── exception/         # Manejo global de errores
-│           └── resources/
-│               └── application.properties
-└── Frontend/
-    ├── index.html                     # Login + aplicación completa
-    ├── css/styles.css
-    └── js/
-        ├── api.js                     # Cliente REST hacia el backend
-        ├── app.js                     # Lógica de la interfaz (CRUD, navegación, asistente)
-        └── data.js                    # Datos de referencia / respaldo (no se usan si la API responde)
+├── Backend/                          # Proyecto Spring Boot (Maven)
+│   ├── Dockerfile
+│   ├── pom.xml
+│   ├── mvnw / mvnw.cmd
+│   ├── mariana_plasticos.sql         # Script de BD (estructura + datos de prueba)
+│   ├── mariana_plasticos.mwb         # Modelo MySQL Workbench
+│   └── src/main/
+│       ├── java/com/example/demo/
+│       │   ├── MarianaPlasticosApplication.java
+│       │   ├── config/               # CORS
+│       │   ├── controller/           # Endpoints REST
+│       │   ├── entity/               # Entidades JPA
+│       │   ├── repository/           # Repositorios JPA
+│       │   ├── service/              # Lógica de negocio + IA
+│       │   ├── dto/                  # DTOs de request/response
+│       │   └── exception/            # Manejo global de errores
+│       └── resources/
+│           └── application.properties
+├── Frontend/
+│   ├── index.html                    # Login + aplicación completa
+│   ├── css/styles.css
+│   └── js/
+│       ├── api.js                    # Cliente REST hacia el backend
+│       └── app.js                    # Lógica de la interfaz (CRUD, navegación, asistente)
+└── README.md
 ```
-
 ---
 
 ## Puesta en marcha
@@ -72,7 +73,7 @@ Mariana-Plasticos/
 
 ### 2. Backend (Spring Boot)
 ```bash
-cd Backend/demo/demo
+cd Backend
 ./mvnw spring-boot:run        # Linux / macOS
 mvnw.cmd spring-boot:run      # Windows
 ```
@@ -85,14 +86,29 @@ o con variables de entorno:
 |---|---|
 | `DB_URL` | `jdbc:mysql://localhost:3306/mariana_plasticos?...` |
 | `DB_USER` | `root` |
-| `DB_PASSWORD` | `admin590` |
+| `DB_PASSWORD` | Contraseña BD | *(tu contraseña local)* |
+| `CORS_ALLOWED_ORIGINS` | Orígenes permitidos | `http://localhost:5500,http://127.0.0.1:5500` |
+| `GEMINI_API_KEY` | Clave de Google Gemini (opcional) | *(tu clave)* |
 
-> No subas contraseñas reales al repositorio.
+El archivo `application.properties` ya lee estas variables:
 
-También puedes abrir `Backend/demo/demo` en IntelliJ IDEA como proyecto Maven y ejecutar `MarianaPlasticosApplication`.
+```properties
+spring.datasource.url=${DB_URL}
+spring.datasource.username=${DB_USER}
+spring.datasource.password=${DB_PASSWORD}
+app.cors.allowed-origins=${CORS_ALLOWED_ORIGINS}
+gemini.api.key=${GEMINI_API_KEY}
+```
 
-### 3. Frontend
-Sirve la carpeta `Frontend` con un servidor estático (no abras `index.html` como `file://`):
+
+#### 4. Frontend
+1. Abre `Frontend/index.html` con Live Server (VS Code) o un servidor estático.
+2. En `Frontend/js/api.js` cambia temporalmente la base URL si es necesario:
+   ```js
+   const BASE_URL = "http://localhost:8080/api";
+   ```
+3. Asegúrate de que `CORS_ALLOWED_ORIGINS` incluya el origen del frontend.
+
 
 ```bash
 cd Frontend
@@ -103,6 +119,19 @@ python3 -m http.server 5500
 O usa **Live Server** de VS Code.
 
 ---
+
+#### 5. Docker (opcional)
+```bash
+cd Backend
+docker build -t mariana-plasticos-api .
+docker run -p 8080:8080 \
+  -e DB_URL="jdbc:mysql://host.docker.internal:3306/mariana_plasticos?..." \
+  -e DB_USER=root \
+  -e DB_PASSWORD=tu_password \
+  -e CORS_ALLOWED_ORIGINS="http://localhost:5500" \
+  -e GEMINI_API_KEY="tu_clave" \
+  mariana-plasticos-api
+```
 
 ## Usuarios de prueba
 
@@ -131,40 +160,73 @@ Base URL: `http://localhost:8080/api`
 
 ---
 
+### Ejemplo de consulta al asistente
+
+```http
+POST /api/asistente/consultar
+Content-Type: application/json
+
+{ "consulta": "¿Cuántos productos hay en inventario?" }
+```
+
+Respuesta típica:
+```json
+{
+  "success": true,
+  "message": "📊 Resumen General — Mariana Plásticos\n..."
+}
+```
+
+---
+
+
 ## Qué está conectado en esta versión
 
 - **Dashboard**: totales calculados desde productos, inventario, pedidos y movimientos.
 - **Productos**: listar, crear, editar y eliminar (`/api/productos`).
-- **Inventario**: listar, crear, editar cantidades/ubicación y eliminar (`/api/inventario`).
-- **Movimientos**: listar, registrar entrada/salida y eliminar encabezado. Al registrar se actualiza también el inventario.
-- **Pedidos**: listar, crear, editar estado/total/observaciones y eliminar encabezados.
-- **Asistente IA**: respuestas demostrativas basadas en datos de la API (no es un modelo de IA real).
+- **Categorías**: CRUD completo.
+- **Inventario**: listar, crear, editar cantidades/ubicación y eliminar.
+- **Movimientos**: listar, registrar entrada/salida y eliminar. Al registrar se actualiza el inventario.
+- **Pedidos**: listar, crear (con detalles de líneas), editar y eliminar. Persiste encabezado + `DetallePedido`.
+- **Clientes y Usuarios**: CRUD.
+- **Asistente IA (`/api/asistente/consultar`)**: responde con datos reales de la base (productos, stock, pedidos, movimientos, etc.). Integrado en el chat del frontend.
+- **Servicio Gemini**: preparado en backend (`GeminiService`) mediante variable `GEMINI_API_KEY` para ampliación futura.
 
 ---
 
 ## Limitaciones conocidas
 
-- Las tablas de detalle (`Detalles_Movimiento`, `Detalles_pedido`) existen en MySQL, pero la API actual no expone esos detalles. Los movimientos no muestran producto/cantidad por línea y los pedidos solo persisten el encabezado (producto/cantidad van a observaciones de forma demostrativa).
-- Entrada/salida hace dos llamadas HTTP (movimiento + inventario), no una transacción atómica. Si una falla, hay inconsistencia temporal.
-- El login compara contraseñas en texto plano y no hay autorización de rutas. Solo válido para desarrollo escolar local.
-- Para usar desde otra máquina, cambia `localhost` por la IP del servidor en `js/api.js` y restringe CORS al origen real del frontend.
+- El login compara contraseñas en texto plano y no hay autorización por roles en las rutas. Solo válido para desarrollo escolar.
+- Entrada/salida de inventario y movimiento pueden involucrar más de una operación; en fallos parciales puede haber inconsistencia temporal (revisar transacciones donde aplique).
+- El asistente principal es orientado a reglas + datos de la BD. El servicio Gemini está implementado pero su uso pleno depende de configurar `GEMINI_API_KEY` y de la integración en el flujo de chat.
+- En Render el backend puede dormir por inactividad; la primera petición tarda más.
+- Para usar desde otra máquina en local, cambia `localhost` por la IP del servidor en `js/api.js` y restringe CORS al origen real del frontend.
 
 ---
 
 ## Cronograma
 
-| Fase | Fecha límite |
-|---|---|
-| Inicio | 31 ago 2026 |
-| Análisis y Diseño | 30 sep 2026 |
-| Construcción | 08 nov 2026 |
-| Validación y Pruebas | 20 nov 2026 |
-| Entrega final | 23 nov 2026 |
+| Fase | Fecha límite | Estado (nov 2026) |
+|---|---|---|
+| Inicio | 31 ago 2026 | Completada |
+| Análisis y Diseño | 30 sep 2026 | Completada |
+| Construcción | 08 nov 2026 | Completada |
+| Validación y Pruebas | 20 nov 2026 | Completada |
+| Entrega final | 24 nov 2026 | Pendiente |
 
 ---
 
-## Notas
+## Notas de seguridad y buenas prácticas
 
-- El asistente IA está **simulado en frontend**; se integrará por API en la fase final.
-- Las contraseñas de la BD de prueba están en texto plano solo para desarrollo; en producción usar hash (BCrypt).
-- No subir credenciales reales al repositorio — usar variables de entorno.
+- **Nunca** subas el archivo `.env` ni credenciales reales al repositorio.
+- Las contraseñas de la BD de prueba están en texto plano solo para desarrollo escolar; en un entorno real usar hash (BCrypt) y autenticación con tokens.
+- La clave de Gemini (`GEMINI_API_KEY`) debe configurarse solo como variable de entorno en Render / local.
+- Revisa periódicamente los orígenes permitidos en CORS.
+
+---
+
+## Notas adicionales
+
+- El frontend consume la API de producción por defecto (`api.js`).
+- El script SQL de prueba se ejecuta una sola vez; después de eso Hibernate (`ddl-auto=update`) mantiene el esquema.
+- Para contribuir: crear rama, hacer cambios y abrir Pull Request hacia `main`.

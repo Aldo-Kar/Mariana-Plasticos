@@ -1,8 +1,10 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
+@Data  // Esto genera TODOS los getters y setters
 @Table(name = "Inventario")
 public class Inventario {
 

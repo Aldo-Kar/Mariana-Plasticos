@@ -133,4 +133,33 @@ public class PedidoController {
         pedidoRepository.deleteById(id);
         return ResponseEntity.ok(ApiResponse.ok("Pedido eliminado", null));
     }
+
+        // ============== NUEVO: Cambiar estado a Entregado por IA ==============
+    @PatchMapping("/{id}/entregar-ia")
+    @Transactional
+    public ResponseEntity<ApiResponse<Pedido>> entregarPorIA(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "Confirmado automáticamente") String motivo) {
+
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", "id", id));
+
+        // Solo actualizar si está en Enviado
+        if (!"Enviado".equals(pedido.getEstado())) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("El pedido no está en estado 'Enviado'")
+            );
+        }
+
+        // Cambiar estado y agregar observación de IA
+        pedido.setEstado("Entregado");
+        String obsActual = pedido.getObservaciones();
+        String nuevaObs = (obsActual != null ? obsActual + " | " : "")
+                        + "IA: " + motivo;
+        pedido.setObservaciones(nuevaObs);
+
+        Pedido guardado = pedidoRepository.save(pedido);
+        return ResponseEntity.ok(ApiResponse.ok("Pedido marcado como Entregado por IA", guardado));
+    }
+    // ======================================================================
 }
